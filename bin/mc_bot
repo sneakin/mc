@@ -32,14 +32,7 @@ rate = 20
 
 begin
   starting = Time.now
-  packets = 0
-
-  rate.times { |i|
-    i, o, e = IO.select([socket], [socket], nil, 10)
-    break unless o.include?(socket)
-
-    packets += bot.process_packets
-  }
+  packets = bot.process_packets
 
   ending = Time.now
   packet_rate = 1.0 / (ending - starting)

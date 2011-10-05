@@ -34,15 +34,10 @@ module MC
     end
 
     def process_packets(stopper = nil)
-      counter = 0
-
       @connection.process_packets do |packet|
         packet.handle(self)
-        counter += 1
         break if stopper && packet.kind_of?(stopper)
       end
-
-      counter
     end
 
     def send_packet(packet)

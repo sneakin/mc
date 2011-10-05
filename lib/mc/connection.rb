@@ -22,7 +22,7 @@ module MC
     end
 
     def process_packets(&block)
-      yield(@parser.read_packet)
+      @parser.process(&block)
     end
 
     def send_packet(packet)

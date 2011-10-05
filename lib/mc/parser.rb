@@ -13,6 +13,18 @@ module MC
       @io = io
     end
 
+    def process(limit = 50, &block)
+      counter = 0
+
+      begin
+        block.call(read_packet)
+        counter += 1
+        i, o, e = IO.select(nil, [@io], nil, 0)
+      end while counter < limit && o.include?(@io)
+
+      counter
+    end
+
     def read_packet
       data = read_byte
       return unless data
