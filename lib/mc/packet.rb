@@ -669,6 +669,10 @@ module MC
       #self.window_id, self.slot, self.item_id = io.read(5).unpack('css')
       #self.item_count, self.item_uses = io.read(3).unpack('cs') if self.item_id > -1
     end
+
+    def handle(client)
+      client.on_set_slot(self)
+    end
   end
 
   class WindowItems < Packet
@@ -697,6 +701,10 @@ module MC
         #item_id = io.read(2).unpack('s')[0]
         #count, uses = io.read(3).unpack('cs') if item_id != -1
       end
+    end
+
+    def handle(client)
+      client.on_window_items(self)
     end
   end
 

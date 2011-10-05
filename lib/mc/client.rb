@@ -10,6 +10,7 @@ module MC
       @name = name
       @connection = connection
       @entities = Hash.new
+      @holding = 0
     end
 
     def close!
@@ -174,8 +175,57 @@ module MC
       send_packet(PlayerPositionAndLook.new(self.x, self.y, self.z, self.stance, self.yaw, self.pitch, self.on_ground))
     end
 
+    class Window
+      Slot = Struct.new(:item_id, :item_count, :item_uses)
+
+      def initialize
+        @slots = Hash.new
+      end
+
+      def clear_slot(slot)
+        @slots.delete(slot)
+      end
+
+      def set_slot(slot, item_id = -1, item_count = 0, item_uses = 0)
+        if item_id == -1
+          clear_slot(slot)
+        else
+          @slots[slot] = Slot.new(item_id, item_count, item_uses)
+        end
+      end
+
+      def use_slot(slot)
+        return unless @slots.has_key?(slot)
+        @slots[slot].item_count -= 1
+        clear_slot(slot) if @slots[slot].item_count == 0
+      end
+
+      def slots
+        @slots
+      end
+    end
+
+    def windows
+      @windows ||= Hash.new { |h, key| h[key] = Window.new }
+    end
+
+    def on_set_slot(packet)
+      window = windows[packet.window_id]
+      window.set_slot(packet.slot, packet.item_id, packet.item_count, packet.item_uses)
+    end
+
+    def on_window_items(packet)
+      window = windows[packet.window_id]
+      packet.slots do |i, slot|
+        window.set_slot(i, slot.item_id, slot.item_count, slot.item_uses)
+      end
+    end
+
+    attr_reader :holding
+
     def holding_slot(slot)
       send_packet(HoldingChange.new(slot))
+      @holding = slot
     end
 
     def eat
@@ -202,6 +252,7 @@ module MC
     end
 
     def place(dx, dy, dz, block_id = -1, direction = 2)
+      windows[0].use_slot(@holding + 36)
       send_packet(MC::PlayerBlockPlacement.new(x + dx, y + dy, z + dz, direction, block_id))
     end
 
