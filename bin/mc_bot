@@ -1,0 +1,163 @@
+#!/bin/env ruby
+
+require 'mc'
+require 'mc/request'
+require 'open-uri'
+
+class Bot < MC::Client
+  def on_keep_alive(packet)
+    puts "KEEP ALIVE: #{packet.keep_alive_id}"
+    super
+  end
+
+  def entity_count
+    entities.
+      collect { |eid, data| data }.
+      group_by { |e| e.mob_type }.
+      collect { |type, e| [type, e.count ] }
+  end
+
+  def named_entities
+    entities.
+      inject([]) { |acc, (eid, data)| acc << data if data.kind_of?(MC::Client::NamedEntity); acc }
+  end
+
+  def crouch
+    change_stance_to(0.8)
+    send_packet(MC::EntityAction.new(0, MC::EntityAction::Crouch))
+  end
+
+  def stand
+    change_stance_to(1.5)
+    send_packet(MC::EntityAction.new(0, MC::EntityAction::Stand))
+  end
+
+  def on_chat_message(packet)
+    super
+
+    m = packet.message.match(/<(\w+)> (.*)/)
+    if m
+      return if m[1] != 'SneakyDean'
+      body = m[2]
+    else
+      m = packet.message.match(/[Server] (.*)/)
+      return if m == nil
+      body = m[1]
+    end
+
+    case body
+    when /hello/i then send_packet(MC::ChatMessage.new("Hello"))
+    when /say (.*)/ then send_packet(MC::ChatMessage.new($1))
+    #when /look (-?\d+) (-?\d+)/ then send_packet(MC::PlayerPositionAndLook.new(x_absolute, y_absolute, z_absolute, stance, $1.to_i, $2.to_i, on_ground)) && send_packet(MC::ChatMessage.new("looking at #{$1} #{$2}"))
+    when /look (-?\d+) (-?\d+)/ then send_packet(MC::PlayerLook.new($1.to_i, $2.to_i, on_ground)) && send_packet(MC::ChatMessage.new("looking at #{$1} #{$2}"))
+    #when /move (-?\d+) (-?\d+)/ then send_packet(MC::PlayerPositionAndLook.new(x_absolute + $1.to_i, y_absolute, z_absolute + $2.to_i, stance, yaw, pitch, on_ground)) && send_packet(MC::ChatMessage.new("moving to #{x_absolute + $1.to_i} #{z_absolute + $2.to_i}"))
+    when /move (-?\d+) (-?\d+) (-?\d+)/ then move_by($1.to_i, $2.to_i, $3.to_i) && send_packet(MC::ChatMessage.new("moving to #{x + $1.to_i} #{y + $2.to_i} #{z + $3.to_i}"))
+    when /move (-?\d+) (-?\d+)/ then move_by($1.to_i, $2.to_i) && send_packet(MC::ChatMessage.new("moving to #{x + $1.to_i / 32.0} #{z + $2.to_i / 32.0}"))
+    when /dig (-?\d+) (-?\d+) (-?\d+) (\d) (\d)/ then dig($1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i)
+    when /dig (-?\d+) (-?\d+) (-?\d+) (\d)/ then dig($1.to_i, $2.to_i, $3.to_i, $4.to_i)
+    when /slot (\d)/ then holding_slot($1.to_i)
+    when /place (-?\d+) (-?\d+) (-?\d+) (-?\d+) (\d)/ then place($1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i)
+    when /place (-?\d+) (-?\d+) (-?\d+) (-?\d+)/ then place($1.to_i, $2.to_i, $3.to_i, $4.to_i)
+    when /place (-?\d+) (-?\d+) (-?\d+)/ then place($1.to_i, $2.to_i, $3.to_i, -1)
+    when /crouch/ then crouch
+    when /stand/ then stand
+    when /eat/ then eat && chat("nom nom")
+    end
+  end
+end
+
+host = 'li172-212.members.linode.com'
+nick = ARGV[0] || 'Bot'
+bot = Bot.new(nick)
+bot.connect(host)
+
+if bot.needs_session?
+  $stdout.write("Password: ")
+  pass = $stdin.readline.strip
+  session = MC::Session.new(nick, pass)
+  session.join_server(bot.connection_hash)
+end
+
+bot.send_packet(MC::LoginRequest.new(nick))
+#bot.send_packet(MC::KeepAlive.new)
+
+Mobs = Hash.new("Unknown")
+<<-EOT.split("\n").each { |l| tid, name = l.split(/\s+/); Mobs[tid.to_i] = name }
+50	 Creeper
+51	 Skeleton
+52	 Spider
+53	 Giant Zombie
+54	 Zombie
+55	 Slime
+56	 Ghast
+57	 Zombie Pigman
+58	 Enderman
+59	 Cave Spider
+60	 Silverfish
+61	 Blaze
+62	 Magma Cube
+90	 Pig
+91	 Sheep
+92	 Cow
+93	 Hen
+94	 Squid
+95	 Wolf
+97	 Snowman
+120	 Villager
+-1       Player
+EOT
+
+def print_status(bot)
+  puts("Health:\t#{bot.health}\tFood:\t#{bot.food}\t#{bot.food_saturation}")
+  puts("Position:\t#{bot.x}, #{bot.y}, #{bot.z}\t#{bot.stance}")
+  puts("Rotation:\t#{bot.yaw} #{bot.pitch}")
+  puts("On ground") if bot.on_ground
+end
+
+def print_entity_count(entity_count)
+  puts(entity_count.collect { |(type, count)| "#{Mobs[type]}\t#{count}" }.join("\n"))
+end
+
+def print_players(players)
+  puts(players.
+       collect { |p| "#{p.name}\t#{p.entity_id}\t#{p.x}, #{p.y}, #{p.z}" }.
+       join("\n"))
+end
+
+def print_chat_messages(msgs)
+  msgs.each do |msg|
+    puts "#{msg}"
+  end
+end
+
+def reset_screen
+  print("\033[0;0f\033[2J")
+end
+
+packets = 0
+starting = Time.now
+ending = Time.now
+rate = 20
+
+begin
+  starting = Time.now
+  packets = 0
+
+  rate.times { |i|
+    i, o, e = IO.select([bot.socket], [bot.socket], nil, 10)
+    break unless o.include?(bot.socket)
+
+    bot.process_packet
+    packets += 1
+  }
+
+  ending = Time.now
+  packet_rate = 1.0 / (ending - starting)
+
+  reset_screen
+  puts "Packets: #{packets}\t#{packet_rate} packets per sec"
+  print_status(bot)
+  print_entity_count(bot.entity_count)
+  print_players(bot.named_entities)
+  print_chat_messages(bot.chat_messages[0, 5])
+end while true
