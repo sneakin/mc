@@ -6,23 +6,17 @@ module MC
     attr_accessor :connection_hash
     attr_accessor :connection
 
-    def initialize(name)
+    def initialize(name, connection)
       @name = name
-      @connection = Connection.new
+      @connection = connection
+      @entities = Hash.new
     end
 
     def close!
       @connection.close!
-      @entities = Hash.new
     end
 
-    def connect(host, port = 25565)
-      close!
-      @connection.connect(host, port)
-      do_handshake
-    end
-
-    def do_handshake
+    def connect
       send_packet(MC::HandshakeRequest.new(name))
       process_packet
     end
@@ -33,6 +27,10 @@ module MC
 
     def needs_session?
       connection_hash != '-'
+    end
+
+    def login
+      send_packet(MC::LoginRequest.new(name))
     end
 
     def process_packet
@@ -73,6 +71,16 @@ module MC
     def change_stance_to(height)
       self.stance = y + height
       move_by(0, 0)
+    end
+
+    def crouch
+      change_stance_to(0.8)
+      send_packet(MC::EntityAction.new(0, MC::EntityAction::Crouch))
+    end
+
+    def stand
+      change_stance_to(1.5)
+      send_packet(MC::EntityAction.new(0, MC::EntityAction::Stand))
     end
 
     def move_by(*args)

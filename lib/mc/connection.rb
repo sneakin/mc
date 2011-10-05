@@ -8,17 +8,16 @@ module MC
   class Connection
     attr_reader :socket
 
-    def initialize
+    def initialize(io)
+      self.socket = io
     end
 
     def close!
       @socket.close if @socket
     end
 
-    def connect(host, port = 25565)
-      close!
-
-      @socket = TCPSocket.new(host, port)
+    def socket=(io)
+      @socket = io
       @parser = Parser.new(@socket)
     end
 
