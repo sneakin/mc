@@ -21,8 +21,8 @@ module MC
       @parser = Parser.new(@socket)
     end
 
-    def read_packet
-      @parser.read_packet
+    def process_packets(&block)
+      yield(@parser.read_packet)
     end
 
     def send_packet(packet)

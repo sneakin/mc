@@ -18,7 +18,7 @@ module MC
 
     def connect
       send_packet(MC::HandshakeRequest.new(name))
-      process_packet
+      process_packets(MC::HandshakeReply)
     end
 
     def on_handshake(packet)
@@ -33,12 +33,16 @@ module MC
       send_packet(MC::LoginRequest.new(name))
     end
 
-    def process_packet
-      read_packet.handle(self)
-    end
+    def process_packets(stopper = nil)
+      counter = 0
 
-    def read_packet
-      @connection.read_packet
+      @connection.process_packets do |packet|
+        packet.handle(self)
+        counter += 1
+        break if stopper && packet.kind_of?(stopper)
+      end
+
+      counter
     end
 
     def send_packet(packet)

@@ -38,8 +38,7 @@ begin
     i, o, e = IO.select([socket], [socket], nil, 10)
     break unless o.include?(socket)
 
-    bot.process_packet
-    packets += 1
+    packets += bot.process_packets
   }
 
   ending = Time.now
