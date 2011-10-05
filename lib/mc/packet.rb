@@ -467,6 +467,19 @@ module MC
     end
   end
 
+  class UseBed < Packet
+    packet_id 0x11
+    attr_accessor :entity_id, :in_bed, :x, :y, :z
+
+    def deserialize(parser)
+      self.entity_id = parser.read_ulong
+      self.in_bed = parser.read_char
+      self.x = parser.read_long
+      self.y = parser.read_byte
+      self.z = parser.read_long
+    end
+  end
+
   class Animation < Packet
     packet_id 0x12
     attr_accessor :entity_id, :animation
