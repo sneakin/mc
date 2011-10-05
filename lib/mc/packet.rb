@@ -32,10 +32,6 @@ module MC
 
     def deserialize(parser)
     end
-
-    def handle(client)
-      client.send("on_#{self.class.name.underscore}", self)
-    end
   end
 
   class KickPacket < Packet
@@ -45,10 +41,6 @@ module MC
 
     def deserialize(parser)
       self.reason = parser.read_string
-    end
-
-    def handle(client)
-      client.on_kick(self)
     end
   end
 
@@ -67,10 +59,6 @@ module MC
 
     def deserialize(parser)
       self.keep_alive_id = parser.read_ulong
-    end
-
-    def handle(client)
-      client.on_keep_alive(self)
     end
   end
 
@@ -92,10 +80,6 @@ module MC
       # puts data.inspect
       # self.entity_id, self.map_seed, self.server_mode, self.dimension, self.difficulty, self.world_height, self.max_players = data.unpack('NxxQNccCC')
     end
-
-    def handle(client)
-      client.on_login_reply(self)
-    end
   end
 
   class ChatMessage < Packet
@@ -113,10 +97,6 @@ module MC
     def deserialize(parser)
       self.message = parser.read_string
     end
-
-    def handle(client)
-      client.on_chat_message(self)
-    end
   end
 
   class NamedEntitySpawn < Packet
@@ -133,10 +113,6 @@ module MC
       self.pitch = parser.read_char
       self.current_item = parser.read_short
     end
-
-    def handle(client)
-      client.on_named_entity_spawn(self)
-    end
   end
 
   class HandshakeReply < Packet
@@ -149,10 +125,6 @@ module MC
 
     def serialize
       super + String16.serialize(connection_hash)
-    end
-
-    def handle(client)
-      client.on_handshake(self)
     end
   end
 
@@ -200,10 +172,6 @@ module MC
 
     def block_position
       [ x / 32.0, y / 32.0, z / 32.0 ]
-    end
-
-    def handle(client)
-      client.on_mob_spawn(self)
     end
   end
 
@@ -280,10 +248,6 @@ module MC
     def deserialize(parser)
       self.entity_id = parser.read_ulong
     end
-
-    def handle(client)
-      client.on_destroy_entity(self)
-    end
   end
 
   class EntityVelocity < Packet
@@ -310,10 +274,6 @@ module MC
       self.dz = parser.read_char
       #self.entity_id, self.dx, self.dy, self.dz = io.read(7).unpack('Nccc')
     end
-
-    def handle(client)
-      client.on_entity_relative_move(self)
-    end
   end
 
   class EntityLookRelativeMove < Packet
@@ -328,10 +288,6 @@ module MC
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       #self.entity_id, self.dx, self.dy, self.dz, self.yaw, self.pitch = io.read(9).unpack('Nccccc')
-    end
-
-    def handle(client)
-      client.on_entity_relative_move(self)
     end
   end
 
@@ -605,10 +561,6 @@ module MC
       self.food = parser.read_short
       self.food_saturation = parser.read_float
     end
-
-    def handle(client)
-      client.on_update_health(self)
-    end
   end
 
   class PlayerPositionLookResponse < Packet
@@ -624,10 +576,6 @@ module MC
       self.pitch = parser.read_float_big
       self.on_ground = parser.read_char
       #self.x, self.stance, self.y, self.z, self.yaw, self.pitch, self.on_ground = io.read(41).unpack('GGGGggc')
-    end
-
-    def handle(client)
-      client.on_player_position_look(self)
     end
   end
 
@@ -682,10 +630,6 @@ module MC
       #self.window_id, self.slot, self.item_id = io.read(5).unpack('css')
       #self.item_count, self.item_uses = io.read(3).unpack('cs') if self.item_id > -1
     end
-
-    def handle(client)
-      client.on_set_slot(self)
-    end
   end
 
   class WindowItems < Packet
@@ -714,10 +658,6 @@ module MC
         #item_id = io.read(2).unpack('s')[0]
         #count, uses = io.read(3).unpack('cs') if item_id != -1
       end
-    end
-
-    def handle(client)
-      client.on_window_items(self)
     end
   end
 

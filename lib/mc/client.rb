@@ -5,12 +5,26 @@ module MC
     attr_reader :socket, :name, :entities
     attr_accessor :connection_hash
     attr_accessor :connection
+    attr_reader :handlers
 
     def initialize(name, connection)
       @name = name
       @connection = connection
       @entities = Hash.new
       @holding = 0
+
+      @handlers = Hash.new { |h, key| h[key] = Array.new }
+      register_handler(MC::HandshakeReply, :on_handshake)
+      register_handler(MC::KeepAlive, :on_keep_alive)
+      register_handler(MC::UpdateHealth, :on_update_health)
+      register_handler(MC::MobSpawn, :on_mob_spawn)
+      register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
+      register_handler(MC::EntityRelativeMove, :on_entity_relative_move)
+      register_handler(MC::DestroyEntity, :on_destroy_entity)
+      register_handler(MC::ChatMessage, :on_chat_message)
+      register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
+      register_handler(MC::SetSlot, :on_set_slot)
+      register_handler(MC::WindowItems, :on_window_items)
     end
 
     def close!
@@ -36,8 +50,26 @@ module MC
 
     def process_packets(stopper = nil)
       @connection.process_packets do |packet|
-        packet.handle(self)
+        process_packet(packet)
         break if stopper && packet.kind_of?(stopper)
+      end
+    end
+
+    def register_handler(packet_type, handler = nil, &block)
+      handlers[packet_type] << block if block
+      handlers[packet_type] << handler if handler
+    end
+
+    def process_packet(packet)
+      h = handlers[packet.class]
+      MC.logger.warn("No packet handlers for #{packet.inspect}") if h.empty?
+
+      h.each do |handler|
+        if handler.kind_of?(Symbol)
+          send(handler, packet)
+        else
+          handler.call(packet)
+        end
       end
     end
 
