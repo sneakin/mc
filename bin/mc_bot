@@ -29,6 +29,11 @@ packets = 0
 starting = Time.now
 ending = Time.now
 rate = 20
+done = false
+
+Signal.trap("INT") do
+  done = true
+end
 
 begin
   starting = Time.now
@@ -40,4 +45,6 @@ begin
   gui.packets = packets
   gui.packet_rate = packet_rate
   gui.update
-end while true
+end until done
+
+puts "Bye"
