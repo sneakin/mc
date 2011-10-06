@@ -322,13 +322,11 @@ module MC
 
   class EntityTeleport < Packet
     packet_id 0x22
-    attr_accessor :entity_id, :x, :y, :z, :yaw, :pitch
+    attr_accessor :entity_id, :position, :yaw, :pitch
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.x = parser.read_long
-      self.y = parser.read_long
-      self.z = parser.read_long
+      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       #self.entity_id, self.x, self.y, self.z, self.yaw, self.pitch = io.read(18).unpack('NNNNcc')
