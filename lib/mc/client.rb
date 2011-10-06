@@ -26,6 +26,7 @@ module MC
       register_handler(MC::UpdateHealth, :on_update_health)
       register_handler(MC::MobSpawn, :on_mob_spawn)
       register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
+      register_handler(MC::Animation, :on_entity_animation)
       register_handler(MC::EntityTeleport, :on_entity_teleport)
       register_handler(MC::EntityRelativeMove, :on_entity_relative_move)
       register_handler(MC::EntityLook, :on_entity_look)
@@ -240,6 +241,13 @@ module MC
       e.current_item = packet.current_item
       e.mob_type = -1
       @entities[packet.entity_id] = e
+    end
+
+    def on_entity_animation(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.animation = packet.animation
     end
 
     def on_entity_look(packet)
