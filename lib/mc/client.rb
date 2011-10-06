@@ -82,6 +82,10 @@ module MC
       @connection.socket
     end
 
+    def say(msg)
+      send_packet(MC::ChatMessage.new(msg))
+    end
+
     attr_accessor :x, :y, :z, :stance, :yaw, :pitch, :on_ground
 
     def x_absolute
@@ -262,10 +266,6 @@ module MC
 
     def eat
       send_packet(PlayerBlockPlacement.new(-1, -1, -1, -1, -1, 0, 0))
-    end
-
-    def chat(msg)
-      send_packet(ChatMessage.new(msg))
     end
 
     def dig(dx, dy, dz, strikes = 50, face = MC::PlayerDigging::Face_Top)

@@ -7,11 +7,12 @@ require 'mc/bot_gui'
 
 host = 'li172-212.members.linode.com'
 nick = ARGV[0] || 'Bot'
-
+admin = "SneakyDean"
 
 socket = TCPSocket.new(host, 25565)
 connection = MC::Connection.new(socket)
 bot = MC::Bot.new(nick, connection)
+bot.admins << admin
 bot.connect
 
 if bot.needs_session?
