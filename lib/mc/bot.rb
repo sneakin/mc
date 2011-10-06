@@ -37,6 +37,30 @@ module MC
       when /crouch/ then crouch
       when /stand/ then stand
       when /eat/ then eat && say("nom nom")
+      when /server info/ then say_server_info
+      when /world info/ then say_world_info
+      end
+    end
+
+    def say_server_info
+      [ "Server info:",
+        "Max players: #{server_info.max_players}",
+        "Mode: #{server_info.mode}",
+        "Difficulty: #{server_info.difficulty}"
+      ].each do |line|
+        say(line)
+      end
+    end
+
+    def say_world_info
+      [ "World:",
+        "time: #{world.time}",
+        "height: #{world.height}",
+        "seed: #{world.seed}",
+        "dimension: #{world.dimension}",
+        "spawn: #{world.spawn_position}"
+      ].each do |line|
+        say(line)
       end
     end
   end

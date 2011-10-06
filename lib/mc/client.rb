@@ -1,11 +1,17 @@
 module MC
   autoload :Connection, 'mc/connection'
+  autoload :World, 'mc/world'
+  autoload :SpawnPosition, 'mc/packet'
+  autoload :TimeUpdate, 'mc/packet'
+  autoload :ServerInfo, 'mc/server_info'
 
   class Client
     attr_reader :socket, :name, :entities
     attr_accessor :connection_hash
     attr_accessor :connection
+    attr_accessor :entity_id
     attr_reader :handlers
+    attr_reader :server_info, :world
 
     def initialize(name, connection)
       @name = name
@@ -14,6 +20,7 @@ module MC
       @holding = 0
 
       @handlers = Hash.new { |h, key| h[key] = Array.new }
+      register_handler(MC::LoginReply, :on_login_reply)
       register_handler(MC::HandshakeReply, :on_handshake)
       register_handler(MC::KeepAlive, :on_keep_alive)
       register_handler(MC::UpdateHealth, :on_update_health)
@@ -25,6 +32,26 @@ module MC
       register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
       register_handler(MC::SetSlot, :on_set_slot)
       register_handler(MC::WindowItems, :on_window_items)
+
+      @server_info = ServerInfo.new
+      register_handler(MC::LoginReply) do |packet|
+        @server_info.update(packet)
+      end
+
+      @world = World.new
+      register_handler(MC::TimeUpdate) do |packet|
+        @world.time = packet.time
+      end
+
+      register_handler(MC::SpawnPosition) do |packet|
+        @world.spawn_position = packet.position
+      end
+
+      register_handler(MC::LoginReply) do |packet|
+        @world.height = packet.world_height
+        @world.dimension = packet.dimension
+        @world.seed = packet.map_seed
+      end
     end
 
     def close!
@@ -34,6 +61,10 @@ module MC
     def connect
       send_packet(MC::HandshakeRequest.new(name))
       process_packets(MC::HandshakeReply)
+    end
+
+    def on_login_reply(packet)
+      self.entity_id = packet.entity_id
     end
 
     def on_handshake(packet)

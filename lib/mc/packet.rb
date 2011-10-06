@@ -1,5 +1,6 @@
 module MC
   autoload :TypeIdFactory, 'mc/type_id_factory'
+  autoload :Vector, 'mc/vector'
 
   class Packet
     include TypeIdFactory
@@ -591,14 +592,15 @@ module MC
 
   class SpawnPosition < Packet
     packet_id 0x06
-    attr_accessor :x, :y, :z
+    attr_accessor :position
 
     def deserialize(parser)
-      self.x = parser.read_long
-      self.y = parser.read_long
-      self.z = parser.read_long
+      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
       #self.x, self.y, self.z = io.read(12).unpack('NNN')
     end
+
+    delegate :x, :y, :z, :to => :position
+    delegate :x=, :y=, :z=, :to => :position
   end
 
   class EntityEquipment < Packet
