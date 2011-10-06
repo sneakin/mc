@@ -54,6 +54,26 @@ module MC
         @world.dimension = packet.dimension
         @world.seed = packet.map_seed
       end
+
+      register_handler(MC::PreChunk) do |packet|
+        if packet.mode == 1
+          @world.allocate_chunk(packet.x, packet.z)
+        else
+          @world.free_chunk(packet.x, packet.z)
+        end
+      end
+
+      register_handler(MC::MapChunk) do |packet|
+        @world.update_chunk(packet.position, packet.chunk_update)
+      end
+
+      register_handler(MC::MultiBlockChange) do |packet|
+        @world.multi_block_change(packet.x, packet.z, packet.updates)
+      end
+
+      register_handler(MC::BlockChange) do |packet|
+        @world[packet.x, packet.y, packet.z].update(World::Block.new(packet.block_type, packet.meta_data))
+      end
     end
 
     def close!
@@ -119,7 +139,20 @@ module MC
       send_packet(MC::ChatMessage.new(msg))
     end
 
-    attr_accessor :x, :y, :z, :stance, :yaw, :pitch, :on_ground
+    attr_accessor :position, :stance, :yaw, :pitch, :on_ground
+    delegate :x, :y, :z, :to => :position
+
+    def x
+      position.try(:x)
+    end
+
+    def y
+      position.try(:y)
+    end
+
+    def z
+      position.try(:z)
+    end
 
     def x_absolute
       x * 32
@@ -156,15 +189,12 @@ module MC
       if args.length == 2
         dx, dz = args
         send_packet(MC::PlayerPosition.new(x + dx.to_f, y, z + dz.to_f, stance, on_ground))
-        self.x += dx.to_f
-        self.z += dz.to_f
+        self.position += Vector.new(dx, 0, dz)
       elsif args.length == 3
         dx, dy, dz = args
         send_packet(MC::PlayerPosition.new(x + dx.to_f, y + dy.to_f, z + dz.to_f, stance + dy.to_f, on_ground))
-        self.x += dx.to_f
-        self.y += dy.to_f
+        self.position += Vector.new(dx, dy, dz)
         self.stance += dy.to_f
-        self.z += dz.to_f
       end
     end
 
@@ -240,15 +270,13 @@ module MC
     end
 
     def on_player_position_look(packet)
-      self.x = packet.x
-      self.y = packet.y
-      self.z = packet.z
+      self.position = packet.position
       self.yaw = packet.yaw
       self.pitch = packet.pitch
       self.stance = packet.stance
       self.on_ground = packet.on_ground
 
-      send_packet(PlayerPositionAndLook.new(self.x, self.y, self.z, self.stance, self.yaw, self.pitch, self.on_ground))
+      send_packet(PlayerPositionAndLook.new(position.x, position.y, position.z, self.stance, self.yaw, self.pitch, self.on_ground))
     end
 
     class Window

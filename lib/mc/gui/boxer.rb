@@ -8,7 +8,7 @@ module MC
       end
 
       def puts(str)
-        str.split("\n").each { |line|
+        str.to_s.split("\n").each { |line|
           write(line + "\n")
           @line += 1
         }

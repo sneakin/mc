@@ -20,6 +20,7 @@ module MC
       print_entity_count
       print_players
       print_chat_messages
+      print_map
     end
 
     private
@@ -34,13 +35,33 @@ module MC
       end
     end
 
+    def print_map
+      return unless bot.position
+
+      width = 18
+      height = 9
+      floor = Array.new(height) { Array.new(width) }
+
+      height.times do |z|
+        width.times do |x|
+          floor[z][x] = bot.world[bot.position.x.to_i - width / 2 + x, bot.position.y.to_i, bot.position.z.to_i - height / 2 + z]
+        end
+      end
+
+      box(65, 1) do |boxer|
+        floor.each do |row|
+          boxer.puts(row.collect { |c| map_char(c) })
+        end
+      end
+    end
+
     def box(column, row, &block)
       boxer = GUI::Boxer.new(column, row)
       block.call(boxer)
     end
 
     def print_slots
-      box(0, 6) do |boxer|
+      box(1, 6) do |boxer|
         boxer.puts "== Slots =="
         bot.windows[0].slots.
           select { |id, slot| (36..44).member?(id) }.
@@ -60,7 +81,7 @@ module MC
     end
 
     def print_entity_count
-      box(0, 17) do |boxer|
+      box(1, 17) do |boxer|
         boxer.puts "== Entities =="
         boxer.puts(entity_count_by_type.collect { |(type, count)| "#{Mobs[type]}\t#{count}" }.join("\n"))
       end
@@ -88,7 +109,7 @@ module MC
     end
 
     def print_chat_messages
-      box(0, 28) do |boxer|
+      box(1, 28) do |boxer|
         boxer.puts "== Chat =="
         bot.chat_messages[0, 5].reverse.each do |msg|
           boxer.puts "#{msg}"
@@ -98,6 +119,20 @@ module MC
 
     def reset_screen
       print("\033[0;0f\033[2J")
+    end
+
+    def map_char(block)
+      case block.type
+      when 0 then ' '
+      when 8 then '~'
+      when 9 then '~'
+      when 10 then '^'
+      when 11 then '^'
+      when 50 then '`'
+      when 64 then '|'
+      when 71 then '|'
+      else '#'
+      end
     end
   end
 end

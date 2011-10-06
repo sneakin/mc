@@ -1,3 +1,5 @@
+require 'zlib'
+
 module MC
   autoload :TypeIdFactory, 'mc/type_id_factory'
   autoload :Vector, 'mc/vector'
@@ -345,18 +347,65 @@ module MC
 
   class MapChunk < Packet
     packet_id 0x33
-    attr_accessor :x, :y, :z, :size_x, :size_y, :size_z, :data_size, :data
+    attr_accessor :position, :size, :data_size, :data
+
+    delegate :x, :y, :z, :to => :position
 
     def deserialize(parser)
-      self.x = parser.read_long
-      self.y = parser.read_short
-      self.z = parser.read_long
-      self.size_x = parser.read_byte
-      self.size_y = parser.read_byte
-      self.size_z = parser.read_byte
+      self.position = Vector.new(parser.read_long, parser.read_short, parser.read_long)
+      self.size = Vector.new(parser.read_byte + 1, parser.read_byte + 1, parser.read_byte + 1)
       self.data_size = parser.read_ulong
       #self.x, self.y, self.z, self.size_x, self.size_y, self.size_z, self.data_size = io.read(17).unpack('NnNcccN')
       self.data = parser.read_bytes(self.data_size)
+    end
+
+    def size_x; size.x; end
+    def size_y; size.y; end
+    def size_z; size.z; end
+
+    def area
+      size.x * size.y * size.z
+    end
+
+    def real_data_size
+      (area * 2.5).to_i
+    end
+
+    def deflated_data
+      @deflated_data ||= Zlib::Inflate.inflate(data.pack("C#{data_size}")).unpack("C#{real_data_size}")
+    end
+
+    def chunk_update
+      ds = real_data_size
+      MC.logger.debug("Chunk data: #{deflated_data[ds, 10].inspect}")
+      types = deflated_data.shift(area)
+      metadata = deflated_data.shift(area / 2)
+      lights = deflated_data.shift(area / 2)
+      sky = deflated_data.shift(area / 2)
+      
+      c = World::ChunkUpdate.new(size)
+      size.z.times do |z|
+        size.y.times do |y|
+          size.x.times do |x|
+            index = y + (z * size.y) + (x * size.y * size.z)
+            c[x, y, z].type = types[index]
+            c[x, y, z].metadata = nibble(metadata, index)
+            c[x, y, z].lights = nibble(lights, index)
+            c[x, y, z].sky_light = nibble(sky, index)
+          end
+        end
+      end
+
+      @chunk = c
+    end
+
+    private
+    def nibble(data, index)
+      nibble = data[index / 2]
+      nibble = nibble >> 4 if index.odd?
+      nibble & 0x7F
+    rescue
+      raise "#{index}\t#{index / 2}\t#{data[index / 2].inspect}\t#{data.inspect}"
     end
   end
 
@@ -390,11 +439,11 @@ module MC
 
   class MultiBlockChange < Packet
     packet_id 0x34
-    attr_accessor :x, :y, :size, :coordinates, :type, :meta_data
+    attr_accessor :x, :z, :size, :coordinates, :type, :meta_data
 
     def deserialize(parser)
       self.x = parser.read_long
-      self.y = parser.read_long
+      self.z = parser.read_long
       self.size = parser.read_short
       self.coordinates = parser.read_shorts(self.size)
       self.type = parser.read_bytes(self.size)
@@ -403,6 +452,20 @@ module MC
       #self.coordinates = io.read(self.size * 2).unpack("n#{self.size}")
       #self.type = io.read(self.size).unpack("C#{self.size}")
       #self.meta_data = io.read(self.size).unpack("C#{self.size}")
+    end
+
+    def updates
+      ret = Array.new
+
+      size.times do |i|
+        position = Vector.new((coordinates[i] >> 12) & 15, (coordinates[i] & 0xFF), (coordinates[i] >> 8) & 15)
+        block = World::Block.new
+        block.type = type[i]
+        block.metadata = meta_data[i]
+        ret[i] = [ position, block ]
+      end
+
+      ret
     end
   end
 
@@ -568,13 +631,12 @@ module MC
 
   class PlayerPositionLookResponse < Packet
     packet_id 0x0D
-    attr_accessor :x, :stance, :y, :z, :yaw, :pitch, :on_ground
+    attr_accessor :position, :stance, :yaw, :pitch, :on_ground
 
     def deserialize(parser)
-      self.x = parser.read_double_float_big
+      tmp = parser.read_double_float_big
       self.stance = parser.read_double_float_big
-      self.y = parser.read_double_float_big
-      self.z = parser.read_double_float_big
+      self.position = Vector.new(tmp, parser.read_double_float_big, parser.read_double_float_big)
       self.yaw = parser.read_float_big
       self.pitch = parser.read_float_big
       self.on_ground = parser.read_char
