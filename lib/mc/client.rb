@@ -34,6 +34,7 @@ module MC
       register_handler(MC::EntityLookRelativeMove, :on_entity_look_relative_move)
       register_handler(MC::EntityVelocity, :on_entity_velocity)
       register_handler(MC::EntityEquipment, :on_entity_equipment)
+      register_handler(MC::EntityMetadata, :on_entity_metadata)
       register_handler(MC::DestroyEntity, :on_destroy_entity)
       register_handler(MC::ChatMessage, :on_chat_message)
       register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
@@ -300,6 +301,13 @@ module MC
       return if e.nil?
 
       e.equip(packet.slot, packet.item_id, packet.damage)
+    end
+
+    def on_entity_metadata(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.meta_data = packet.meta_data
     end
 
     def on_destroy_entity(packet)
