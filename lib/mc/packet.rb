@@ -605,16 +605,16 @@ module MC
     packet_id 0xC9
     attr_accessor :player_name, :online, :ping
 
-    def packet_id
-      0xC9
-    end
-
     def deserialize(parser)
       self.player_name = parser.read_string
       self.online = parser.read_byte
       self.ping = parser.read_ushort
       #self.player_name = String16.deserialize(io)
       #self.online, self.ping = io.read(3).unpack('cn')
+    end
+
+    def online?
+      online == true || online == 1
     end
   end
 

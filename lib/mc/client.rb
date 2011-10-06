@@ -39,6 +39,9 @@ module MC
       register_handler(MC::LoginReply) do |packet|
         @server_info.update(packet)
       end
+      register_handler(MC::PlayerListItem) do |packet|
+        @server_info.update_player(packet.player_name, packet.online?, packet.ping)
+      end
 
       @world = World.new
       register_handler(MC::TimeUpdate) do |packet|

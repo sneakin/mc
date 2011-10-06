@@ -46,7 +46,8 @@ module MC
       [ "Server info:",
         "Max players: #{server_info.max_players}",
         "Mode: #{server_info.mode}",
-        "Difficulty: #{server_info.difficulty}"
+        "Difficulty: #{server_info.difficulty}",
+        "Players: #{server_info.players.keys.join(', ')}"
       ].each do |line|
         say(line)
       end
