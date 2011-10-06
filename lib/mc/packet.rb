@@ -281,15 +281,28 @@ module MC
     end
   end
 
-  class EntityLookRelativeMove < Packet
-    packet_id 0x21
-    attr_accessor :entity_id, :dx, :dy, :dz, :yaw, :pitch
+  class EntityLook < Packet
+    packet_id 0x20
+    attr_accessor :entity_id, :yaw, :pitch
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.dx = parser.read_char
-      self.dy = parser.read_char
-      self.dz = parser.read_char
+      self.yaw = parser.read_char
+      self.pitch = parser.read_char
+    end
+  end
+
+  class EntityLookRelativeMove < Packet
+    packet_id 0x21
+    attr_accessor :entity_id, :delta, :yaw, :pitch
+
+    def dx; delta.x; end
+    def dy; delta.y; end
+    def dz; delta.z; end
+
+    def deserialize(parser)
+      self.entity_id = parser.read_ulong
+      self.delta = Vector.new(parser.read_char, parser.read_char, parser.read_char)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       #self.entity_id, self.dx, self.dy, self.dz, self.yaw, self.pitch = io.read(9).unpack('Nccccc')

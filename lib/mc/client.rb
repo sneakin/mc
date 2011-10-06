@@ -27,6 +27,8 @@ module MC
       register_handler(MC::MobSpawn, :on_mob_spawn)
       register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
       register_handler(MC::EntityRelativeMove, :on_entity_relative_move)
+      register_handler(MC::EntityLook, :on_entity_look)
+      register_handler(MC::EntityLookRelativeMove, :on_entity_look_relative_move)
       register_handler(MC::EntityVelocity, :on_entity_velocity)
       register_handler(MC::EntityEquipment, :on_entity_equipment)
       register_handler(MC::DestroyEntity, :on_destroy_entity)
@@ -239,11 +241,24 @@ module MC
       @entities[packet.entity_id] = e
     end
 
+    def on_entity_look(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.yaw = packet.yaw
+      e.pitch = packet.pitch
+    end
+
     def on_entity_relative_move(packet)
       e = @entities[packet.entity_id]
       return if e.nil?
 
       e.position += packet.delta
+    end
+
+    def on_entity_look_relative_move(packet)
+      on_entity_relative_move(packet)
+      on_entity_look(packet)
     end
 
     def on_entity_velocity(packet)
