@@ -253,15 +253,16 @@ module MC
 
   class EntityVelocity < Packet
     packet_id 0x1C
-    attr_accessor :entity_id, :x, :y, :z
+    attr_accessor :entity_id, :velocity
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.x = parser.read_short
-      self.y = parser.read_short
-      self.z = parser.read_short
+      self.velocity = Vector.new(parser.read_short, parser.read_short, parser.read_short)
       #self.entity_id, self.x, self.y, self.z = io.read(10).unpack('Nnnn')
     end
+
+    delegate :x, :y, :z, :to => :velocity
+    delegate :x=, :y=, :z=, :to => :velocity
   end
 
   class EntityRelativeMove < Packet

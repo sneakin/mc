@@ -27,6 +27,7 @@ module MC
       register_handler(MC::MobSpawn, :on_mob_spawn)
       register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
       register_handler(MC::EntityRelativeMove, :on_entity_relative_move)
+      register_handler(MC::EntityVelocity, :on_entity_velocity)
       register_handler(MC::DestroyEntity, :on_destroy_entity)
       register_handler(MC::ChatMessage, :on_chat_message)
       register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
@@ -178,7 +179,7 @@ module MC
       send_packet(packet)
     end
 
-    Mob = Struct.new(:entity_id, :x, :y, :z, :meta_data, :pitch, :yaw, :mob_type)
+    Mob = Struct.new(:entity_id, :x, :y, :z, :velocity, :meta_data, :pitch, :yaw, :mob_type)
 
     def on_mob_spawn(packet)
       mob = Mob.new
@@ -193,7 +194,7 @@ module MC
       @entities[packet.entity_id] = mob
     end
 
-    NamedEntity = Struct.new(:entity_id, :name, :x, :y, :z, :rotation, :pitch, :current_item, :mob_type)
+    NamedEntity = Struct.new(:entity_id, :name, :x, :y, :z, :velocity, :rotation, :pitch, :current_item, :mob_type)
 
     def on_named_entity_spawn(packet)
       e = NamedEntity.new
@@ -216,6 +217,13 @@ module MC
       e.x += packet.dx
       e.y += packet.dy
       e.z += packet.dz
+    end
+
+    def on_entity_velocity(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.velocity = packet.velocity
     end
 
     def on_destroy_entity(packet)
