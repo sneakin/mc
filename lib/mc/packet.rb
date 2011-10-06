@@ -102,15 +102,13 @@ module MC
 
   class NamedEntitySpawn < Packet
     packet_id 0x14
-    attr_accessor :entity_id, :name, :x, :y, :z, :rotation, :pitch, :current_item
+    attr_accessor :entity_id, :name, :position, :yaw, :pitch, :current_item
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
       self.name = parser.read_string
-      self.x = parser.read_long
-      self.y = parser.read_long
-      self.z = parser.read_long
-      self.rotation = parser.read_char
+      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
+      self.yaw = parser.read_char
       self.pitch = parser.read_char
       self.current_item = parser.read_short
     end
@@ -152,14 +150,15 @@ module MC
 
   class MobSpawn < Packet
     packet_id 0x18
-    attr_accessor :entity_id, :mob_type, :x, :y, :z, :yaw, :pitch, :meta_data
+    attr_accessor :entity_id, :mob_type, :position, :yaw, :pitch, :meta_data
+
+    delegate :x, :y, :z, :to => :position
+    delegate :x=, :y=, :z=, :to => :position
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
       self.mob_type = parser.read_byte
-      self.x = parser.read_long
-      self.y = parser.read_long
-      self.z = parser.read_long
+      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
 
@@ -267,13 +266,15 @@ module MC
 
   class EntityRelativeMove < Packet
     packet_id 0x1F
-    attr_accessor :entity_id, :dx, :dy, :dz
+    attr_accessor :entity_id, :delta
+
+    def dx; delta.x; end
+    def dy; delta.y; end
+    def dz; delta.z; end
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.dx = parser.read_char
-      self.dy = parser.read_char
-      self.dz = parser.read_char
+      self.delta = Vector.new(parser.read_char, parser.read_char, parser.read_char)
       #self.entity_id, self.dx, self.dy, self.dz = io.read(7).unpack('Nccc')
     end
   end

@@ -28,6 +28,7 @@ module MC
       register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
       register_handler(MC::EntityRelativeMove, :on_entity_relative_move)
       register_handler(MC::EntityVelocity, :on_entity_velocity)
+      register_handler(MC::EntityEquipment, :on_entity_equipment)
       register_handler(MC::DestroyEntity, :on_destroy_entity)
       register_handler(MC::ChatMessage, :on_chat_message)
       register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
@@ -179,14 +180,13 @@ module MC
       send_packet(packet)
     end
 
-    Mob = Struct.new(:entity_id, :x, :y, :z, :velocity, :meta_data, :pitch, :yaw, :mob_type)
+    autoload :Entity, 'mc/entity'
+    autoload :NamedEntity, 'mc/named_entity'
 
     def on_mob_spawn(packet)
-      mob = Mob.new
+      mob = Entity.new
       mob.entity_id = packet.entity_id
-      mob.x = packet.x
-      mob.y = packet.y
-      mob.z = packet.z
+      mob.position = packet.position
       mob.meta_data = packet.meta_data
       mob.pitch = packet.pitch
       mob.yaw = packet.yaw
@@ -194,16 +194,12 @@ module MC
       @entities[packet.entity_id] = mob
     end
 
-    NamedEntity = Struct.new(:entity_id, :name, :x, :y, :z, :velocity, :rotation, :pitch, :current_item, :mob_type)
-
     def on_named_entity_spawn(packet)
       e = NamedEntity.new
       e.entity_id = packet.entity_id
       e.name = packet.name
-      e.x = packet.x
-      e.y = packet.y
-      e.z = packet.z
-      e.rotation = packet.rotation
+      e.position = packet.position
+      e.yaw = packet.yaw
       e.pitch = packet.pitch
       e.current_item = packet.current_item
       e.mob_type = -1
@@ -214,9 +210,7 @@ module MC
       e = @entities[packet.entity_id]
       return if e.nil?
 
-      e.x += packet.dx
-      e.y += packet.dy
-      e.z += packet.dz
+      e.position += packet.delta
     end
 
     def on_entity_velocity(packet)
@@ -224,6 +218,13 @@ module MC
       return if e.nil?
 
       e.velocity = packet.velocity
+    end
+
+    def on_entity_equipment(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.equip(packet.slot, packet.item_id, packet.damage)
     end
 
     def on_destroy_entity(packet)

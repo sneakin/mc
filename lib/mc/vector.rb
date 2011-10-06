@@ -14,16 +14,32 @@ module MC
       @data[X]
     end
 
+    def x=(v)
+      @data[X] = v
+    end
+
     def y
       @data[Y]
+    end
+
+    def y=(v)
+      @data[Y] = v
     end
 
     def z
       @data[Z]
     end
 
+    def z=(v)
+      @data[Z] = v
+    end
+
     def to_s
       "<#{data.join(", ")}>"
+    end
+
+    def +(other)
+      self.class.new(x + other.x, y + other.y, z + other.z)
     end
   end
 end

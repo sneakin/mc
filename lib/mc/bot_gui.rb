@@ -84,7 +84,7 @@ module MC
 
     def named_entities
       bot.entities.
-        inject([]) { |acc, (eid, data)| acc << data if data.kind_of?(MC::Client::NamedEntity); acc }
+        inject([]) { |acc, (eid, data)| acc << data if data.named?; acc }
     end
 
     def print_chat_messages
