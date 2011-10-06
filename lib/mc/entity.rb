@@ -1,6 +1,6 @@
 module MC
   class Entity
-    attr_accessor :entity_id, :position, :velocity, :meta_data, :pitch, :yaw, :mob_type, :animation, :equipment
+    attr_accessor :entity_id, :position, :velocity, :meta_data, :pitch, :yaw, :mob_type, :animation, :status, :equipment
 
     def initialize
       self.equipment = Hash.new

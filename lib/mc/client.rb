@@ -35,6 +35,7 @@ module MC
       register_handler(MC::EntityVelocity, :on_entity_velocity)
       register_handler(MC::EntityEquipment, :on_entity_equipment)
       register_handler(MC::EntityMetadata, :on_entity_metadata)
+      register_handler(MC::EntityStatus, :on_entity_status)
       register_handler(MC::DestroyEntity, :on_destroy_entity)
       register_handler(MC::ChatMessage, :on_chat_message)
       register_handler(MC::PlayerPositionLookResponse, :on_player_position_look)
@@ -218,9 +219,9 @@ module MC
     attr_accessor :experience_total, :experience_level, :experience_current
 
     def on_experience(packet)
-      experience_total = packet.experience_total
-      experience_level = packet.experience_level
-      experience_current = packet.experience_current
+      experience_total = packet.total
+      experience_level = packet.level
+      experience_current = packet.current
     end
 
     def on_keep_alive(packet)
@@ -308,6 +309,13 @@ module MC
       return if e.nil?
 
       e.meta_data = packet.meta_data
+    end
+
+    def on_entity_status(packet)
+      e = @entities[packet.entity_id]
+      return if e.nil?
+
+      e.status = packet.status
     end
 
     def on_destroy_entity(packet)
