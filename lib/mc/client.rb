@@ -24,6 +24,7 @@ module MC
       register_handler(MC::HandshakeReply, :on_handshake)
       register_handler(MC::KeepAlive, :on_keep_alive)
       register_handler(MC::UpdateHealth, :on_update_health)
+      register_handler(MC::Experience, :on_experience)
       register_handler(MC::MobSpawn, :on_mob_spawn)
       register_handler(MC::NamedEntitySpawn, :on_named_entity_spawn)
       register_handler(MC::Animation, :on_entity_animation)
@@ -211,6 +212,14 @@ module MC
       self.health = packet.health
       self.food = packet.food
       self.food_saturation = packet.food_saturation
+    end
+
+    attr_accessor :experience_total, :experience_level, :experience_current
+
+    def on_experience(packet)
+      experience_total = packet.experience_total
+      experience_level = packet.experience_level
+      experience_current = packet.experience_current
     end
 
     def on_keep_alive(packet)
