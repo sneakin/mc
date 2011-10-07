@@ -38,7 +38,7 @@ module MC
     def print_map
       return unless bot.position
 
-      width = 18
+      width = 19
       height = 9
       floor = Array.new(height) { Array.new(width) }
 
@@ -48,9 +48,11 @@ module MC
         end
       end
 
+      floor[height / 2][width / 2] = 'X'
+
       box(65, 1) do |boxer|
         floor.each do |row|
-          boxer.puts(row.collect { |c| map_char(c) })
+          boxer.puts(row.collect { |c| if c == 'X'; c; else; map_char(c); end })
         end
       end
     end
