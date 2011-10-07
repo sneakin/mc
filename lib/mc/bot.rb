@@ -39,6 +39,7 @@ module MC
       when /eat/ then eat && say("nom nom")
       when /server info/ then say_server_info
       when /world info/ then say_world_info
+      when /save chunks (.*)/ then save_chunks($1); say("Saved to #{$1}")
       end
     end
 
@@ -62,6 +63,27 @@ module MC
         "spawn: #{world.spawn_position}"
       ].each do |line|
         say(line)
+      end
+    end
+
+    def save_chunks(directory)
+      Dir.mkdir(directory) unless File.exists?(directory)
+      padding = 2 + world.number_of_chunks.to_s.length
+
+      world.each_chunk do |x, z, chunk|
+        File.open("%s/%.#{padding}i_%.#{padding}i.yml" % [ directory, x, z ], "w") do |file|
+          World::Chunk::Height.times do |y|
+            World::Chunk::Width.times do |x|
+              World::Chunk::Length.times do |z|
+                file.write("%.3i %.3i" % [ chunk[x, y, z].type, chunk[x, y, z].metadata ])
+                file.write("  ") unless (World::Chunk::Length - z) <= 1
+              end
+
+              file.write("\n")
+            end
+            file.write("\n")
+          end
+        end
       end
     end
   end

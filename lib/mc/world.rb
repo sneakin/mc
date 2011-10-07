@@ -59,6 +59,10 @@ module MC
       def [](x, y, z)
         @blocks[y][z][x]
       end
+
+      def absolute_block(x, y, z)
+        @blocks[y & 127, z & 15, x & 15]
+      end
     end
 
     attr_accessor :time, :spawn_position, :height, :dimension, :seed
@@ -101,6 +105,18 @@ module MC
       c_p = Vector.new(x & 15, y & 127, z & 15)
 
       chunk[c_p.x, c_p.y, c_p.z]
+    end
+
+    def each_chunk
+      chunks.each do |x, row_chunks|
+        row_chunks.each do |z, chunk|
+          yield(x, z, chunk)
+        end
+      end
+    end
+
+    def number_of_chunks
+      chunks.size + chunks.inject(0) { |acc, (k, v)| acc += v.size }
     end
   end
 end
