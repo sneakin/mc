@@ -6,9 +6,9 @@ module MC
 
     attr_accessor :admins
 
-    def initialize(name, connection)
+    def initialize(name, connection, admins = Array.new)
       super
-      self.admins = []
+      self.admins = admins
     end
 
     def is_admin?(nick)
