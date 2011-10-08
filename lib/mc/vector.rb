@@ -34,12 +34,46 @@ module MC
       @data[Z] = v
     end
 
+    def nan?
+      x.nan? || y.nan? || z.nan?
+    end
+
     def to_s
       "<#{data.join(", ")}>"
     end
 
     def +(other)
       self.class.new(x + other.x, y + other.y, z + other.z)
+    end
+
+    def -(other)
+      self.class.new(x - other.x, y - other.y, z - other.z)
+    end
+
+    def *(other)
+      case other
+      when Numeric then self.class.new(x * other, y * other, z * other)
+      else self.class.new(x * other.x, y * other.y, z * other.z)
+      end
+    end
+
+    def /(other)
+      case other
+      when Numeric then self.class.new(x / other, y / other, z / other)
+      else self.class.new(x / other.x, y / other.y, z / other.z)
+      end
+    end
+
+    def length
+      Math.sqrt(x ** 2 + y ** 2 + z ** 2)
+    end
+
+    def distance_to(other)
+      (self - other).length
+    end
+
+    def normalize
+      self / length
     end
   end
 end

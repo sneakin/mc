@@ -36,7 +36,7 @@ module MC
     end
 
     def print_map
-      return unless bot.position
+      return if bot.position.nil? || bot.position.nan?
 
       width = 19
       height = 9

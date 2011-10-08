@@ -3,6 +3,7 @@ require 'zlib'
 module MC
   autoload :TypeIdFactory, 'mc/type_id_factory'
   autoload :Vector, 'mc/vector'
+  autoload :Position, 'mc/position'
 
   class Packet
     include TypeIdFactory
@@ -109,7 +110,7 @@ module MC
     def deserialize(parser)
       self.entity_id = parser.read_ulong
       self.name = parser.read_string
-      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
+      self.position = Position.absolute(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       self.current_item = parser.read_short
@@ -160,7 +161,7 @@ module MC
     def deserialize(parser)
       self.entity_id = parser.read_ulong
       self.mob_type = parser.read_byte
-      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
+      self.position = Position.absolute(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
 
@@ -173,7 +174,7 @@ module MC
     end
 
     def block_position
-      [ x / 32.0, y / 32.0, z / 32.0 ]
+      position
     end
   end
 
@@ -276,7 +277,7 @@ module MC
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.delta = Vector.new(parser.read_char, parser.read_char, parser.read_char)
+      self.delta = Position.absolute(parser.read_char, parser.read_char, parser.read_char)
       #self.entity_id, self.dx, self.dy, self.dz = io.read(7).unpack('Nccc')
     end
   end
@@ -302,7 +303,7 @@ module MC
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.delta = Vector.new(parser.read_char, parser.read_char, parser.read_char)
+      self.delta = Position.absolute(parser.read_char, parser.read_char, parser.read_char)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       #self.entity_id, self.dx, self.dy, self.dz, self.yaw, self.pitch = io.read(9).unpack('Nccccc')
@@ -326,7 +327,7 @@ module MC
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
+      self.position = Position.absolute(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
       #self.entity_id, self.x, self.y, self.z, self.yaw, self.pitch = io.read(18).unpack('NNNNcc')
@@ -647,7 +648,7 @@ module MC
     def deserialize(parser)
       tmp = parser.read_double_float_big
       self.stance = parser.read_double_float_big
-      self.position = Vector.new(tmp, parser.read_double_float_big, parser.read_double_float_big)
+      self.position = Position.block(tmp, parser.read_double_float_big, parser.read_double_float_big)
       self.yaw = parser.read_float_big
       self.pitch = parser.read_float_big
       self.on_ground = parser.read_char

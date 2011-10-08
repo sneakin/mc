@@ -9,11 +9,14 @@ module MC
     def initialize(name, connection, admins = Array.new)
       super(name, connection)
       self.admins = admins
+      @last_time = Time.now
     end
 
     def is_admin?(nick)
       admins.include?(nick)
     end
+
+    Float = /-?\d+(\.\d+)?/
 
     def on_chat_message(packet)
       super
@@ -40,7 +43,48 @@ module MC
       when /server info/ then say_server_info
       when /world info/ then say_world_info
       when /save chunks (.*)/ then save_chunks($1); say("Saved to #{$1}")
+      when /move to (#{Float}) (#{Float})/ then move_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
+      when /move to (#{Float}) (#{Float}) (#{Float})/ then move_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{3} #{$5}")
+      when /move to (\w+)/ then say("Moving to #{move_to_entity($1)}")
+      when /stop/ then stop_moving
       end
+    end
+
+    def tick
+      now = Time.now
+      if (now - @last_time) > 0.1
+        tick_motion 
+        @last_time =  now
+      end
+    end
+
+    def stop_moving
+      @destination = nil
+    end
+
+    def move_to(x, y, z)
+      @destination = Vector.new(x, y, z)
+      tick_motion
+    end
+
+    def tick_motion
+      return if @destination.nil? || position.nil?
+
+      if position.distance_to(@destination) <= 1.0
+        @destination = nil
+      else
+        dv = (@destination - position).normalize * 2
+        move_by(dv.x, dv.y, dv.z)
+        say("Moving by #{dv}")
+      end
+    end
+
+    def move_to_entity(name)
+      ent = named_entities.find { |e| e.name =~ /#{name}/i }
+      return nil if ent.nil?
+
+      move_to(ent.position.x, ent.position.y, ent.position.z)
+      ent.position
     end
 
     def say_server_info

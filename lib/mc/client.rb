@@ -242,6 +242,13 @@ module MC
       @entities[packet.entity_id] = mob
     end
 
+    def named_entities
+      @entities.inject(Array.new) do |acc, (eid, entity)|
+        acc << entity if entity.named?
+        acc
+      end
+    end
+
     def on_named_entity_spawn(packet)
       e = NamedEntity.new
       e.entity_id = packet.entity_id

@@ -6,6 +6,7 @@ require 'mc/bot'
 require 'mc/bot_gui'
 
 host = 'li172-212.members.linode.com'
+#host = 'localhost'
 nick = ARGV[0] || 'Bot'
 admins = %W(SneakyDean)
 
@@ -38,6 +39,7 @@ end
 begin
   starting = Time.now
   packets = bot.process_packets
+  bot.tick
 
   ending = Time.now
   packet_rate = 1.0 / (ending - starting)
