@@ -7,7 +7,7 @@ module MC
     attr_accessor :admins
 
     def initialize(name, connection, admins = Array.new)
-      super
+      super(name, connection)
       self.admins = admins
     end
 
