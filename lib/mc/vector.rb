@@ -1,3 +1,5 @@
+require 'mc/core_ext/fixnum'
+
 module MC
   class Vector
     X = 0
@@ -74,6 +76,10 @@ module MC
 
     def normalize
       self / length
+    end
+
+    def ==(other)
+      x == other.x && y == other.y && z == other.z
     end
   end
 end

@@ -44,7 +44,7 @@ module MC
 
       height.times do |z|
         width.times do |x|
-          floor[z][x] = bot.world[bot.position.x.to_i - width / 2 + x, bot.position.y.to_i, bot.position.z.to_i - height / 2 + z - 1]
+          floor[z][x] = bot.world[bot.position.x.to_i - width / 2 + x - 1, bot.position.y.to_i, bot.position.z.to_i - height / 2 + z]
         end
       end
 

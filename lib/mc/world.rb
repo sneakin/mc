@@ -61,7 +61,7 @@ module MC
       end
 
       def absolute_block(x, y, z)
-        @blocks[y & 127, z & 15, x & 15]
+        self[x.to_i & 15, y.to_i & 127, z.to_i & 15]
       end
     end
 
@@ -100,11 +100,12 @@ module MC
       end
     end
 
-    def [](x, y, z)
-      chunk = chunks[x >> 4][z >> 4]
-      c_p = Vector.new(x & 15, y & 127, z & 15)
+    def chunk_at(x, y, z)
+      chunks[x.to_i >> 4][z.to_i >> 4]
+    end
 
-      chunk[c_p.x, c_p.y, c_p.z]
+    def [](x, y, z)
+      chunk_at(x, y, z).absolute_block(x, y, z)
     end
 
     def each_chunk

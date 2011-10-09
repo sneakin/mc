@@ -1,6 +1,8 @@
 require 'mc'
 
 module MC
+  autoload :PathFinder, 'mc/path_finder'
+
   class Bot < Client
     autoload :Message, 'mc/bot/message'
 
@@ -43,8 +45,9 @@ module MC
       when /server info/ then say_server_info
       when /world info/ then say_world_info
       when /save chunks (.*)/ then save_chunks($1); say("Saved to #{$1}")
-      when /move to (#{Float}) (#{Float})/ then move_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
-      when /move to (#{Float}) (#{Float}) (#{Float})/ then move_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{3} #{$5}")
+      when /save chunk (.*)/ then save_chunk($1, world.chunk_at(position.x, position.y, position.z)); say("Saved current chunk to #{$1}")
+      when /move to (#{Float}) (#{Float})/ then walk_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
+      when /move to (#{Float}) (#{Float}) (#{Float})/ then walk_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{3} #{$5}")
       when /move to (\w+)/ then say("Moving to #{move_to_entity($1)}")
       when /stop/ then stop_moving
       end
@@ -59,31 +62,31 @@ module MC
     end
 
     def stop_moving
-      @destination = nil
+      @path = []
     end
 
-    def move_to(x, y, z)
-      @destination = Vector.new(x, y, z)
+    def walk_to(x, y, z)
+      dest = Vector.new(x, y, z)
+      @path = PathFinder.new(world).plot(position, dest)
+      MC.logger.debug("Path: #{position} -> #{dest}\t#{@path.join(" ")}")
       tick_motion
     end
 
     def tick_motion
-      return if @destination.nil? || position.nil?
+      return if @path.nil? || @path.empty? || position.nil?
 
-      if position.distance_to(@destination) <= 1.0
-        @destination = nil
-      else
-        dv = (@destination - position).normalize * 2
-        move_by(dv.x, dv.y, dv.z)
-        say("Moving by #{dv}")
-      end
+      p = @path.shift
+      say("Moving from #{position} to #{p}")
+      move_to(p.x + 0.5, p.y, p.z + 0.5)
+
+      say("Made it!") if @path.empty?
     end
 
     def move_to_entity(name)
       ent = named_entities.find { |e| e.name =~ /#{name}/i }
       return nil if ent.nil?
 
-      move_to(ent.position.x, ent.position.y, ent.position.z)
+      walk_to(ent.position.x, ent.position.y, ent.position.z)
       ent.position
     end
 
@@ -115,18 +118,22 @@ module MC
       padding = 2 + world.number_of_chunks.to_s.length
 
       world.each_chunk do |x, z, chunk|
-        File.open("%s/%.#{padding}i_%.#{padding}i.yml" % [ directory, x, z ], "w") do |file|
-          World::Chunk::Height.times do |y|
-            World::Chunk::Width.times do |x|
-              World::Chunk::Length.times do |z|
-                file.write("%.3i %.3i" % [ chunk[x, y, z].type, chunk[x, y, z].metadata ])
-                file.write("  ") unless (World::Chunk::Length - z) <= 1
-              end
+        save_chunk("%s/%.#{padding}i_%.#{padding}i.yml" % [ directory, x, z ], chunk)
+      end
+    end
 
-              file.write("\n")
+    def save_chunk(path, chunk)
+      File.open(path, "w") do |file|
+        World::Chunk::Height.times do |y|
+          World::Chunk::Length.times do |z|
+            World::Chunk::Width.times do |x|
+              file.write("%.3i %.3i" % [ chunk[x, y, z].type, chunk[x, y, z].metadata ])
+              file.write("  ") unless (World::Chunk::Length - x) <= 1
             end
+
             file.write("\n")
           end
+          file.write("\n")
         end
       end
     end

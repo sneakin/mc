@@ -208,6 +208,12 @@ module MC
       end
     end
 
+    def move_to(nx, ny, nz)
+      send_packet(MC::PlayerPosition.new(nx, ny, nz, ny + (self.stance - self.y), on_ground))
+      self.stance = ny + (self.stance - self.y)
+      self.position = Vector.new(nx, ny, nz)
+    end
+
     attr_accessor :health, :food, :food_saturation
 
     def on_update_health(packet)
