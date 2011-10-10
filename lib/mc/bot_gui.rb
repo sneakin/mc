@@ -52,7 +52,7 @@ module MC
 
       box(65, 1) do |boxer|
         floor.each do |row|
-          boxer.puts(row.collect { |c| if c == 'X'; c; else; map_char(c); end })
+          boxer.puts(row.collect { |c| if c == 'X'; c; else; map_char(c); end }.join)
         end
       end
     end

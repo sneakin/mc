@@ -5,6 +5,9 @@ module MC
   autoload :TimeUpdate, 'mc/packet'
   autoload :ServerInfo, 'mc/server_info'
 
+  autoload :Entity, 'mc/entity'
+  autoload :NamedEntity, 'mc/named_entity'
+
   class Client
     attr_reader :socket, :name, :entities
     attr_accessor :connection_hash
@@ -233,9 +236,6 @@ module MC
     def on_keep_alive(packet)
       send_packet(packet)
     end
-
-    autoload :Entity, 'mc/entity'
-    autoload :NamedEntity, 'mc/named_entity'
 
     def on_mob_spawn(packet)
       mob = Entity.new
