@@ -216,7 +216,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(2, 0, 1) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(3, 0, 1), MC::Vector.new(2, 0, 1) ]
+            plot.should == [ MC::Vector.new(3, 0, 1), MC::Vector.new(2, 0, 1) ]
           end
         end
 
@@ -224,7 +224,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(2, 0, 3) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(3, 0, 3), MC::Vector.new(2, 0, 3) ]
+            plot.should == [ MC::Vector.new(3, 0, 3), MC::Vector.new(2, 0, 3) ]
           end
         end
       end
@@ -236,7 +236,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(2, 0, 1) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(1, 0, 1), MC::Vector.new(2, 0, 1) ]
+            plot.should == [ MC::Vector.new(1, 0, 1), MC::Vector.new(2, 0, 1) ]
           end
         end
 
@@ -244,7 +244,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(2, 0, 3) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(1, 0, 3), MC::Vector.new(2, 0, 3) ]
+            plot.should == [ MC::Vector.new(1, 0, 3), MC::Vector.new(2, 0, 3) ]
           end
         end
       end
@@ -256,7 +256,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(1, 0, 2) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(1, 0, 3), MC::Vector.new(1, 0, 2) ]
+            plot.should == [ MC::Vector.new(1, 0, 3), MC::Vector.new(1, 0, 2) ]
           end
         end
 
@@ -264,7 +264,7 @@ describe MC::PathFinder do
           let(:ending) { MC::Vector.new(3, 0, 2) }
 
           it "does not cut the corner" do
-            subject.plot(starting, ending).should == [ MC::Vector.new(3, 0, 3), MC::Vector.new(3, 0, 2) ]
+            plot.should == [ MC::Vector.new(3, 0, 3), MC::Vector.new(3, 0, 2) ]
           end
         end
       end
@@ -334,6 +334,97 @@ describe MC::PathFinder do
       end
     end
 
-    context 'into an unloaded chunk'
+    context 'into an unloaded chunk' do
+      it "stops at the chunk"
+
+      context 'when the chunk is loaded after the path is calculated' do
+        it "routes into the chunk"
+      end
+    end
+
+    context 'from position that is not centered on a block' do
+      it "makes the first move to the center of the block"
+    end
+
+    context 'position update after initial calculation' do
+      context 'along the path' do
+        it "does not change the rest of the path to the target"
+      end
+
+      context 'off the path' do
+        it "recalculates the rest of the path to the target"
+      end
+    end
+
+    context 'target update after initial calculation' do
+      context 'along the path' do
+        it "shortens the path"
+      end
+
+      context 'off of the path' do
+        it "recalculates the path to the new target"
+      end
+    end
+
+    context "map update after path calculation" do
+      let(:map_data) do
+        [ [7, 7, 7, 7, 7, 7],
+          [7, 0, 0, 0, 0, 7],
+          [7, 0, 0, 0, 0, 7],
+          [7, 0, 0, 0, 0, 7],
+          [7, 0, 0, 0, 0, 7],
+          [7, 7, 7, 7, 7, 7],
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(1, 0, 1) }
+      let(:ending) { MC::Vector.new(4, 0, 4) }
+
+      before do
+        # initial path
+        path = plot
+        path.should_not be_empty
+
+        # take a a step on the path
+        subject.position = path[0]
+      end
+
+      context 'that has a passable door' do
+        before do
+          # add a wall with a door
+          1.upto(3) do |z|
+            world[3, 0, z].type = 7
+            subject.map_updated_at(MC::Vector.new(3, 0, z))
+          end
+        end
+
+        it "routes through the door from the new position" do
+          subject.plot.should == [ MC::Vector.new(2, 0, 3),
+                                   MC::Vector.new(2, 0, 4),
+                                   MC::Vector.new(3, 0, 4),
+                                   MC::Vector.new(4, 0, 4)
+                                 ]
+        end
+      end
+
+      context 'that has NO passable door' do
+        before do
+          # add a wall
+          1.upto(4) do |z|
+            world[3, 0, z].type = 7
+            subject.map_updated_at(MC::Vector.new(3, 0, z))
+          end
+        end
+
+        it "returns no path" do
+$stderr.puts subject.inspect
+          subject.plot.should == []
+        end
+      end
+    end
+
+    context 'in a map with 3d obstacles'
+
+    context 'with minable obstacles'
   end
 end

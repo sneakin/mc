@@ -17,26 +17,46 @@ module MC
 
     def initialize(world)
       @world = world
+      @closed = Array.new
+      @open = Array.new
     end
 
-    def plot(starting, ending)
-      return Array.new unless walkable?(starting) && walkable?(ending)
+    attr_reader :closed, :open, :position, :target
 
-      closed = Array.new
-      open = [ Square.new(nil, starting, 0, starting.distance_to(ending) * 10) ]
+    def position=(vector)
+      @position = vector
+    end
+
+    def target=(vector)
+      @target = vector
+    end
+
+    def at_target?
+      position == target
+    end
+
+    def map_updated_at(position)
+    end
+
+    def plot
+      return Array.new unless walkable?(position) && walkable?(target)
+
+      @open = [ Square.new(nil, position, 0, position.distance_to(target) * 10) ]
+      @closed = Array.new
 
       while !open.empty?
         current = open.shift
         closed << current
-        break if current.position == ending
+        break if current.position == target
 
-        neighbors_of(current.position) do |pos, block, corner|
+        neighbors_of(current.position) do |pos, block|
           next if !walkable?(pos) || closed.find { |e| e.position == pos }
           # don't cut corners
-          next if (corner.x.abs == 1 || corner.y.abs == 1) && (!walkable?(current.position + Vector.new(corner.x, 0, 0)) || !walkable?(current.position + Vector.new(0, 0, corner.z)))
+          delta = pos - current.position
+          next if (delta.x.abs == 1 && delta.z.abs == 1) && (!walkable?(current.position + Vector.new(delta.x, 0, 0)) || !walkable?(current.position + Vector.new(0, 0, delta.z)))
 
           weight = 10
-          weight = 14 if corner.x.abs == 1 && corner.z.abs == 1
+          weight = 14 if delta.x.abs == 1 && delta.z.abs == 1
           g = current.g + weight
 
           if (square = open.find { |e| e.position == pos })
@@ -45,41 +65,16 @@ module MC
               square.g = g
             end
           else
-            open << Square.new(current, pos, g, pos.distance_to(ending) * 10)
+            open << Square.new(current, pos, g, pos.distance_to(target) * 10)
           end
 
           open.sort! { |a, b| a.f <=> b.f }
         end
       end
 
-      # min_x = closed.min { |a, b| a.position.x <=> b.position.x }.position.x - 1
-      # min_z = closed.min { |a, b| a.position.z <=> b.position.z }.position.z - 1
-      # max_x = closed.max { |a, b| a.position.x <=> b.position.x }.position.x + 1
-      # max_z = closed.max { |a, b| a.position.z <=> b.position.z }.position.z + 1
+      #closed_debug_dump(closed)
 
-
-      # MC.logger.debug("Closed: #{min_x} #{min_z}\t#{max_x} #{max_z}")
-      # str = ""
-      # (max_z - min_z).to_i.times do |z|
-      #   (max_x - min_x).to_i.times do |x|
-      #     square = closed.find { |s| s.position.x == (min_x + x) && s.position.z == (min_z + z) }
-      #     if square
-      #       str += ("%4i %4i  " % [ square.g, square.h ])
-      #     else
-      #       str += ("____ ____  ")
-      #     end
-      #   end
-      #   str += ("\n")
-      # end
-      # MC.logger.debug("\n#{str}")
-
-      path = Array.new
-      p = closed.last
-      while p.parent
-        path.unshift(p.position)
-        p = p.parent
-      end
-      path
+      trace_path(closed)
     end
 
     def neighbors_of(point)
@@ -92,7 +87,7 @@ module MC
           next if dz == 0 && dx == 0
 
           block = @world[x + dx, y, z + dz] rescue nil
-          yield(Vector.new(x + dx, y, z + dz), block, Vector.new(dx, 0, dz))
+          yield(Vector.new(x + dx, y, z + dz), block)
         end
       end
     end
@@ -102,6 +97,41 @@ module MC
       block.type == 0
     rescue
       false
+    end
+
+    def trace_path(closed)
+      path = Array.new
+      p = closed.last
+      while p.parent
+        path.unshift(p.position)
+        p = p.parent
+      end
+      path
+    end
+
+    private
+
+    def closed_debug_dump(closed)
+      min_x = closed.min { |a, b| a.position.x <=> b.position.x }.position.x - 1
+      min_z = closed.min { |a, b| a.position.z <=> b.position.z }.position.z - 1
+      max_x = closed.max { |a, b| a.position.x <=> b.position.x }.position.x + 1
+      max_z = closed.max { |a, b| a.position.z <=> b.position.z }.position.z + 1
+
+
+      MC.logger.debug("Closed: #{min_x} #{min_z}\t#{max_x} #{max_z}")
+      str = ""
+      (max_z - min_z).to_i.times do |z|
+        (max_x - min_x).to_i.times do |x|
+          square = closed.find { |s| s.position.x == (min_x + x) && s.position.z == (min_z + z) }
+          if square
+            str += ("%4i %4i  " % [ square.g, square.h ])
+          else
+            str += ("____ ____  ")
+          end
+        end
+        str += ("\n")
+      end
+      MC.logger.debug("\n#{str}")
     end
   end
 end

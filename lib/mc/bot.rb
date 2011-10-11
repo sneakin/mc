@@ -62,24 +62,30 @@ module MC
     end
 
     def stop_moving
-      @path = []
+      @path_finder = nil
     end
 
     def walk_to(x, y, z)
-      dest = Vector.new(x, y, z)
-      @path = PathFinder.new(world).plot(position, dest)
-      MC.logger.debug("Path: #{position} -> #{dest}\t#{@path.join(" ")}")
+      @path_finder ||= PathFinder.new(world)
+      @path_finder.target = Vector.new(x, y, z)
+      MC.logger.debug("Path: #{position} -> #{@path_finder.target}")
       tick_motion
     end
 
     def tick_motion
-      return if @path.nil? || @path.empty? || position.nil?
+      return if @path_finder.nil? || position.nil? || @path_finder.at_target?
 
-      p = @path.shift
-      say("Moving from #{position} to #{p}")
-      move_to(p.x + 0.5, p.y, p.z + 0.5)
+      @path_finder.position = position - Vector.new(0.5, 0, 0.5)
+      path = @path_finder.plot
+      MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{path.collect(&:to_s).join("; ")}")
+      if path.empty?
+        say("No way to move to #{@path_finder.target}")
+      else
+        MC.logger.debug("Moving from #{position} to #{path[0]}")
+        move_to(path[0].x + 0.5, path[0].y, path[0].z + 0.5)
+      end
 
-      say("Made it!") if @path.empty?
+      say("Made it") if @path_finder.at_target?
     end
 
     def move_to_entity(name)
