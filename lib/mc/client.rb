@@ -70,7 +70,7 @@ module MC
 
       register_handler(MC::PreChunk) do |packet|
         if packet.mode == 1
-          @world.allocate_chunk(packet.x, packet.z)
+          # @world.allocate_chunk(packet.x, packet.z)
         else
           @world.free_chunk(packet.x, packet.z)
         end
