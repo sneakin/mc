@@ -75,11 +75,20 @@ module MC
     end
 
     def normalize
-      self / length
+      l = length
+      if l > 0
+        self / l
+      else
+        self.class.new(0.0, 0.0, 0.0)
+      end
     end
 
     def ==(other)
       x == other.x && y == other.y && z == other.z
+    end
+
+    def dot(other)
+      x * other.x + y * other.y + z * other.z
     end
   end
 end
