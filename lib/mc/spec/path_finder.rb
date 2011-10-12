@@ -6,12 +6,10 @@ module MC
       module Plot
         def self.included(base)
           base.let(:world) { TestWorld.new(map_data) }
-          base.subject { described_class.new(world) }
+          base.subject { described_class.new(world, starting, ending) }
         end
 
         def plot
-          subject.target = ending
-          subject.position = starting
           subject.plot
         end
 

@@ -1,3 +1,5 @@
+require 'mc'
+
 module MC
   module Spec
     class TestWorld
@@ -13,6 +15,8 @@ module MC
 
       def [](x, y, z)
         @data[z - @origin_z][x - @origin_x]
+      rescue
+        MC::World::Block.new(7)
       end
 
       def width

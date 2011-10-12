@@ -83,8 +83,12 @@ module MC
       end
     end
 
+    def clamp
+      self.class.new(x.to_i, y.to_i, z.to_i)
+    end
+
     def ==(other)
-      x == other.x && y == other.y && z == other.z
+      other != nil && x == other.x && y == other.y && z == other.z
     end
 
     def dot(other)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 module MC
   class PathFinder
     class Square
@@ -15,10 +16,12 @@ module MC
       end
     end
 
-    def initialize(world)
+    def initialize(world, starting, target)
       @world = world
       @closed = Array.new
       @open = Array.new
+      @position = starting
+      @target = target
     end
 
     attr_reader :closed, :open, :position, :target
@@ -32,7 +35,7 @@ module MC
     end
 
     def at_target?
-      position == target
+      target == nil || position == target
     end
 
     def map_updated_at(position)
@@ -41,7 +44,7 @@ module MC
     def plot
       return Array.new unless walkable?(position) && walkable?(target)
 
-      @open = [ Square.new(nil, position, 0, position.distance_to(target) * 10) ]
+      @open = [ Square.new(nil, position, 0, estimated_cost_from(position)) ]
       @closed = Array.new
 
       while !open.empty?
@@ -49,15 +52,10 @@ module MC
         closed << current
         break if current.position == target
 
-        neighbors_of(current.position) do |pos, block|
-          next if !walkable?(pos) || closed.find { |e| e.position == pos }
-          # don't cut corners
-          delta = pos - current.position
-          next if (delta.x.abs == 1 && delta.z.abs == 1) && (!walkable?(current.position + Vector.new(delta.x, 0, 0)) || !walkable?(current.position + Vector.new(0, 0, delta.z)))
+        neighbors_of(current.position) do |pos|
+          next if blocked_from?(current.position, pos) || closed.find { |e| e.position == pos }
 
-          weight = 10
-          weight = 14 if delta.x.abs == 1 && delta.z.abs == 1
-          g = current.g + weight
+          g = current.g + cost_to_move(current.position, pos)
 
           if (square = open.find { |e| e.position == pos })
             if g < square.g
@@ -65,29 +63,31 @@ module MC
               square.g = g
             end
           else
-            open << Square.new(current, pos, g, pos.distance_to(target) * 10)
+            open << Square.new(current, pos, g, estimated_cost_from(pos))
           end
 
           open.sort! { |a, b| a.f <=> b.f }
         end
       end
 
-      #closed_debug_dump(closed)
+      if ENV['DEBUG']
+        debug_dump(open, "Open")
+        debug_dump(closed, "Closed")
+        debug_dump(open + closed, "Both")
+      end
 
       trace_path(closed)
     end
 
-    def neighbors_of(point)
-      x = point.x.to_i
-      y = point.y.to_i
-      z = point.z.to_i
+    def estimated_cost_from(point)
+      point.distance_to(target) * 10
+    end
 
+    def neighbors_of(point)
       [ -1, 0, 1 ].each do |dz|
         [ -1, 0, 1 ].each do |dx|
           next if dz == 0 && dx == 0
-
-          block = @world[x + dx, y, z + dz] rescue nil
-          yield(Vector.new(x + dx, y, z + dz), block)
+          yield((point + Vector.new(dx, 0, dz)).clamp)
         end
       end
     end
@@ -97,6 +97,22 @@ module MC
       block.type == 0
     rescue
       false
+    end
+
+    # Returns true if `b`, the destination, is not walkable or if `a` to `b`
+    # is a diagonal and there is a solid block to the side, above, or below `a`.
+    def blocked_from?(a, b)
+      delta = b - a
+      !walkable?(b) || ((delta.x.abs == 1 && delta.z.abs == 1) && (!walkable?(a + Vector.new(delta.x, 0, 0)) || !walkable?(a + Vector.new(0, 0, delta.z))))
+    end
+
+    def cost_to_move(a, b)
+      delta = b - a
+      if delta.x.abs == 1 && delta.z.abs == 1
+        14
+      else
+        10
+      end
     end
 
     def trace_path(closed)
@@ -111,27 +127,54 @@ module MC
 
     private
 
-    def closed_debug_dump(closed)
-      min_x = closed.min { |a, b| a.position.x <=> b.position.x }.position.x - 1
-      min_z = closed.min { |a, b| a.position.z <=> b.position.z }.position.z - 1
-      max_x = closed.max { |a, b| a.position.x <=> b.position.x }.position.x + 1
-      max_z = closed.max { |a, b| a.position.z <=> b.position.z }.position.z + 1
+    def debug_dump(grid, desc = "Closed")
+      if grid.empty?
+        MC.logger.debug("#{desc}: empty")
+        return
+      end
+
+      min_x = grid.min { |a, b| a.position.x <=> b.position.x }.position.x - 1
+      min_z = grid.min { |a, b| a.position.z <=> b.position.z }.position.z - 1
+      max_x = grid.max { |a, b| a.position.x <=> b.position.x }.position.x + 1
+      max_z = grid.max { |a, b| a.position.z <=> b.position.z }.position.z + 1
 
 
-      MC.logger.debug("Closed: #{min_x} #{min_z}\t#{max_x} #{max_z}")
+      MC.logger.debug("#{desc}: #{min_x} #{min_z}\t#{max_x} #{max_z}")
       str = ""
-      (max_z - min_z).to_i.times do |z|
-        (max_x - min_x).to_i.times do |x|
-          square = closed.find { |s| s.position.x == (min_x + x) && s.position.z == (min_z + z) }
+      min_z.upto(max_z) do |z|
+        min_x.upto(max_x) do |x|
+          p = Vector.new(x, position.y, z)
+          square = grid.find { |s| s.position.x == x && s.position.z == z }
+          p.y = square.position.y if square
+
+          i = if p == @position
+                "*"
+              elsif p == @target
+                'T'
+              else
+                "_"
+              end
+
           if square
-            str += ("%4i %4i  " % [ square.g, square.h ])
+            str += ("%s%s %4i %4i  " % [ i, direction_char(p, square.parent.try(:position)), square.g, square.h ])
           else
-            str += ("____ ____  ")
+            str += ("%s  ____ ____  " % [ i ])
           end
         end
         str += ("\n")
       end
       MC.logger.debug("\n#{str}")
+    end
+
+    DirArrows = [ [ '↖', '↑', '↗'],
+                  [ '⟵', '*', '⟶'],
+                  [ '↙', '↓', '↘']
+                ]
+    def direction_char(a, b)
+      return 'N' if a.nil? || b.nil?
+
+      d = b - a
+      DirArrows[d.z + 1][d.x + 1]
     end
   end
 end

@@ -55,31 +55,32 @@ module MC
 
     def tick
       now = Time.now
-      if (now - @last_time) > 0.1
+      if (now - @last_time) > 0.04
         tick_motion 
         @last_time =  now
       end
     end
 
     def stop_moving
-      @path_finder = nil
+      @path_finder.target = nil
     end
 
     def walk_to(x, y, z)
-      @path_finder ||= PathFinder.new(world)
+      @path_finder ||= PathFinder.new(world, position, nil)
       @path_finder.target = Vector.new(x, y, z)
       MC.logger.debug("Path: #{position} -> #{@path_finder.target}")
       tick_motion
     end
 
     def tick_motion
-      return if @path_finder.nil? || position.nil? || @path_finder.at_target?
+      return if position.nil? || @path_finder.nil? || @path_finder.at_target?
 
       @path_finder.position = position - Vector.new(0.5, 0, 0.5)
       path = @path_finder.plot
       MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{path.collect(&:to_s).join("; ")}")
       if path.empty?
         say("No way to move to #{@path_finder.target}")
+        @path_finder.target = nil
       else
         MC.logger.debug("Moving from #{position} to #{path[0]}")
         move_to(path[0].x + 0.5, path[0].y, path[0].z + 0.5)

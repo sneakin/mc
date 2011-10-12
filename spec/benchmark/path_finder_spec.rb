@@ -1,3 +1,4 @@
+require 'benchmark'
 require 'mc/path_finder'
 require 'mc/spec/path_finder'
 
@@ -5,7 +6,7 @@ describe MC::PathFinder do
   describe '#plot' do
     include MC::Spec::PathFinder::Plot
 
-    context 'memory use' do
+    context 'repeated runs' do
       let(:map_data) do
         [ [ 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
           [ 7, 0, 7, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 7],
@@ -33,11 +34,11 @@ describe MC::PathFinder do
         if RUBY_VERSION =~ /^1\.8/
           21.0
         else
-          7.0
+          10.0
         end
       end
 
-      it "is still faster than 0.03 of a second after being called multiple times" do
+      it "remains faster than the expected time" do
         times = Benchmark.measure do
           runs.times { plot.should_not be_empty }
         end

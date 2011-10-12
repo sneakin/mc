@@ -55,7 +55,7 @@ describe MC::PathFinder do
         let(:ending) { MC::Vector.new(-4, 0, -4) }
 
         let(:world) { MC::Spec::TestWorld.new(map_data, -5, -5) }
-        subject { described_class.new(world) }
+        subject { described_class.new(world, starting, ending) }
 
         it "returns a list of points from the starting to destination" do
           plot.should == [ MC::Vector.new(-2, 0, -2),
@@ -416,9 +416,8 @@ describe MC::PathFinder do
           end
         end
 
-        it "returns no path" do
-$stderr.puts subject.inspect
-          subject.plot.should == []
+        it "happened to move back to the starting point" do
+          subject.plot.should == [ MC::Vector.new(1, 0, 1) ]
         end
       end
     end
