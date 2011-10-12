@@ -134,6 +134,11 @@ module MC
       when 50 then '`'
       when 64 then '|'
       when 71 then '|'
+      when 53 then '>'
+      when 67 then '>'
+      when 108 then '>'
+      when 109 then '>'
+      when 114 then '>'
       else '#'
       end
     end
