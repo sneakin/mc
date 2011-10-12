@@ -137,11 +137,8 @@ describe MC::PathFinder do
       let(:starting) { MC::Vector.new(1, 0, 1) }
       let(:ending) { MC::Vector.new(5, 0, 4) }
 
-      it "returns a list of points that moves closer" do
-        plot.should == [ MC::Vector.new(1, 0, 2),
-                         MC::Vector.new(1, 0, 3),
-                         MC::Vector.new(1, 0, 4)
-                       ]
+      it "returns an empty path" do
+        plot.should be_empty
       end
     end
 
@@ -169,23 +166,32 @@ describe MC::PathFinder do
         let(:starting) { MC::Vector.new(5, 0, 4) }
         let(:ending) { MC::Vector.new(1, 0, 1) }
 
-        it "returns a list moving towards the ending" do
-          plot.should == [ MC::Vector.new(4, 0, 4),
-                           MC::Vector.new(3, 0, 4),
-                           MC::Vector.new(2, 0, 4),
-                           MC::Vector.new(1, 0, 4)
-                         ]
+        it "returns an empty path" do
+          plot.should be_empty
         end
       end
     end
 
     context 'cornering' do
       let(:map_data) do
-        [ [0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0],
-          [0, 0, 7, 0, 0],
-          [0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0],
+        [ [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 7, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ]
         ]
       end
 
@@ -416,14 +422,90 @@ describe MC::PathFinder do
           end
         end
 
-        it "happened to move back to the starting point" do
-          subject.plot.should == [ MC::Vector.new(1, 0, 1) ]
+        it "returns no path" do
+          subject.plot.should be_empty
         end
       end
     end
 
-    context 'in a map with 3d obstacles'
+    context 'in a map with head level obstacles' do
+      let(:map_data) do
+        [ 
+         [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7]
+          ],
+          [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 7, 0, 7],
+            [7, 7, 0, 7, 0, 7],
+            [7, 0, 0, 7, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7]
+          ]
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(1, 0, 1) }
+      let(:ending) { MC::Vector.new(4, 0, 4) }
+
+      it "zigs and zags around the partial wall" do
+        plot.should == [ MC::Vector.new(2, 0, 1),
+                         MC::Vector.new(2, 0, 2),
+                         MC::Vector.new(2, 0, 3),
+                         MC::Vector.new(2, 0, 4),
+                         MC::Vector.new(3, 0, 4),
+                         MC::Vector.new(4, 0, 4)
+                       ]
+      end
+    end
+
+    context 'in a map with hurdles' do
+      let(:map_data) do
+        [ 
+         [ [7, 7, 7, 7, 7, 7],
+           [7, 0, 0, 7, 0, 7],
+           [7, 7, 7, 7, 0, 7],
+           [7, 7, 0, 7, 0, 7],
+           [7, 0, 0, 7, 0, 7],
+           [7, 7, 7, 7, 7, 7]
+         ],
+         [ [7, 7, 7, 7, 7, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 7, 7, 7, 7, 7]
+         ],
+         [ [7, 7, 7, 7, 7, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 0, 0, 0, 0, 7],
+           [7, 7, 7, 7, 7, 7]
+         ],
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(1, 0, 1) }
+      let(:ending) { MC::Vector.new(4, 0, 4) }
+
+      it "zigs and zags around the partial wall" do
+        path = plot
+        path.should == [ MC::Vector.new(2, 0, 1),
+                         MC::Vector.new(2, 1, 2),
+                         MC::Vector.new(3, 1, 2),
+                         MC::Vector.new(3, 1, 3),
+                         MC::Vector.new(4, 0, 3),
+                         MC::Vector.new(4, 0, 4)
+                       ]
+      end
+    end
 
     context 'with minable obstacles'
+    context 'with water'
+    context 'with lava'
   end
 end

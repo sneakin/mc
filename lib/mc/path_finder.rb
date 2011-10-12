@@ -84,19 +84,24 @@ module MC
     end
 
     def neighbors_of(point)
-      [ -1, 0, 1 ].each do |dz|
-        [ -1, 0, 1 ].each do |dx|
-          next if dz == 0 && dx == 0
-          yield((point + Vector.new(dx, 0, dz)).clamp)
+      [ -1, 0, 1 ].each do |dy|
+        [ -1, 0, 1 ].each do |dz|
+          [ -1, 0, 1 ].each do |dx|
+            next if dz == 0 && dx == 0
+            yield((point + Vector.new(dx, dy, dz)).clamp)
+          end
         end
       end
     end
 
     def walkable?(point)
-      block = @world[point.x.to_i, point.y.to_i, point.z.to_i]
-      block.type == 0
-    rescue
-      false
+      point = point.clamp
+      feet = @world[point.x, point.y - 1, point.z]
+      legs = @world[point.x, point.y, point.z]
+      head = @world[point.x, point.y + 1, point.z]
+      feet.type != 0 && legs.type == 0 && head.type == 0
+    #rescue
+    #  false
     end
 
     # Returns true if `b`, the destination, is not walkable or if `a` to `b`
@@ -108,14 +113,19 @@ module MC
 
     def cost_to_move(a, b)
       delta = b - a
-      if delta.x.abs == 1 && delta.z.abs == 1
-        14
-      else
-        10
-      end
+      delta.length * 10
+#       if delta.x.abs == 1 && delta.y.abs == 1 && delta.z.abs == 1
+#         17
+#       elsif delta.x.abs == 1 && delta.z.abs == 1
+#         14
+#       else
+#         10
+#       end
     end
 
     def trace_path(closed)
+      return [] if closed.last.position != target
+
       path = Array.new
       p = closed.last
       while p.parent
@@ -134,34 +144,48 @@ module MC
       end
 
       min_x = grid.min { |a, b| a.position.x <=> b.position.x }.position.x - 1
+      min_y = grid.min { |a, b| a.position.y <=> b.position.y }.position.y - 1
       min_z = grid.min { |a, b| a.position.z <=> b.position.z }.position.z - 1
       max_x = grid.max { |a, b| a.position.x <=> b.position.x }.position.x + 1
+      max_y = grid.max { |a, b| a.position.y <=> b.position.y }.position.y + 1
       max_z = grid.max { |a, b| a.position.z <=> b.position.z }.position.z + 1
 
 
-      MC.logger.debug("#{desc}: #{min_x} #{min_z}\t#{max_x} #{max_z}")
+      MC.logger.debug("#{desc}: #{min_x} #{min_y} #{min_z}\t#{max_x} #{max_y} #{max_z}")
       str = ""
-      min_z.upto(max_z) do |z|
-        min_x.upto(max_x) do |x|
-          p = Vector.new(x, position.y, z)
-          square = grid.find { |s| s.position.x == x && s.position.z == z }
-          p.y = square.position.y if square
+      min_y.upto(max_y) do |y|
+        min_z.upto(max_z) do |z|
+          min_x.upto(max_x) do |x|
+            p = Vector.new(x, y, z)
+            square = grid.find { |s| s.position == p }
+            #p.y = square.position.y if square
 
-          i = if p == @position
-                "*"
-              elsif p == @target
-                'T'
-              else
-                "_"
-              end
+            i = if p == @position
+                  "*"
+                elsif p == @target
+                  'T'
+                else
+                  "_"
+                end
+            up = '_'
+            if square && square.parent
+              up = case (p - square.parent.position).y
+                   when 1 then 'U'
+                   when 0 then ' '
+                   when -1 then 'D'
+                   else '_'
+                   end
+            end
 
-          if square
-            str += ("%s%s %4i %4i  " % [ i, direction_char(p, square.parent.try(:position)), square.g, square.h ])
-          else
-            str += ("%s  ____ ____  " % [ i ])
+            if square
+              str += ("%s%s%s %4i %4i  " % [ i, direction_char(p, square.parent.try(:position)), up, square.g, square.h ])
+            else
+              str += ("%s__  ____ ____  " % [ i ])
+            end
           end
+          str += ("\n")
         end
-        str += ("\n")
+        str += "-------\n"
       end
       MC.logger.debug("\n#{str}")
     end

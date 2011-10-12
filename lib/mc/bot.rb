@@ -46,8 +46,8 @@ module MC
       when /world info/ then say_world_info
       when /save chunks (.*)/ then save_chunks($1); say("Saved to #{$1}")
       when /save chunk (.*)/ then save_chunk($1, world.chunk_at(position.x, position.y, position.z)); say("Saved current chunk to #{$1}")
-      when /move to (#{Float}) (#{Float})/ then walk_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
       when /move to (#{Float}) (#{Float}) (#{Float})/ then walk_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{3} #{$5}")
+      when /move to (#{Float}) (#{Float})/ then walk_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
       when /move to (\w+)/ then say("Moving to #{move_to_entity($1)}")
       when /stop/ then stop_moving
       end
@@ -84,9 +84,8 @@ module MC
       else
         MC.logger.debug("Moving from #{position} to #{path[0]}")
         move_to(path[0].x + 0.5, path[0].y, path[0].z + 0.5)
+        say("Made it") if @path_finder.at_target?
       end
-
-      say("Made it") if @path_finder.at_target?
     end
 
     def move_to_entity(name)

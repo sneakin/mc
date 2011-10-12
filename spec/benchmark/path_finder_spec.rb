@@ -32,9 +32,9 @@ describe MC::PathFinder do
 
       let(:expected_total_time) do
         if RUBY_VERSION =~ /^1\.8/
-          21.0
+          93
         else
-          10.0
+          24.0
         end
       end
 
