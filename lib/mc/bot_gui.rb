@@ -19,8 +19,8 @@ module MC
       print_inventory
       print_entity_count
       print_players
-      print_chat_messages
       print_map
+      print_chat_messages
     end
 
     private
@@ -31,6 +31,7 @@ module MC
         boxer.puts("Health:\t#{bot.health}\tFood:\t#{bot.food}\t#{bot.food_saturation}")
         boxer.puts("Position:\t#{bot.x}, #{bot.y}, #{bot.z}\t#{bot.stance}")
         boxer.puts("Rotation:\t#{bot.yaw} #{bot.pitch}")
+        boxer.puts("Time:\t#{bot.world.time}")
         boxer.puts("On ground") if bot.on_ground
       end
     end
@@ -63,7 +64,7 @@ module MC
     end
 
     def print_slots
-      box(1, 6) do |boxer|
+      box(1, 7) do |boxer|
         boxer.puts "== Slots =="
         bot.windows[0].slots.
           select { |id, slot| (36..44).member?(id) }.
@@ -73,7 +74,7 @@ module MC
     end
 
     def print_inventory
-      box(40, 6) do |boxer|
+      box(40, 7) do |boxer|
         boxer.puts "== Inventory =="
         bot.windows[0].slots.
           reject { |id, slot| (36..44).member?(id) }.
@@ -83,7 +84,7 @@ module MC
     end
 
     def print_entity_count
-      box(1, 17) do |boxer|
+      box(1, 18) do |boxer|
         boxer.puts "== Entities =="
         boxer.puts(entity_count_by_type.collect { |(type, count)| "#{Mobs[type]}\t#{count}" }.join("\n"))
       end
@@ -97,7 +98,7 @@ module MC
     end
 
     def print_players
-      box(40, 17) do |boxer|
+      box(40, 18) do |boxer|
         boxer.puts "== Players =="
         boxer.puts(named_entities.
              collect { |p| "#{p.name}\t#{p.entity_id}\t#{p.x}, #{p.y}, #{p.z}" }.
@@ -111,7 +112,7 @@ module MC
     end
 
     def print_chat_messages
-      box(1, 28) do |boxer|
+      box(1, 29) do |boxer|
         boxer.puts "== Chat =="
         bot.chat_messages[0, 5].reverse.each do |msg|
           boxer.puts "#{msg}"
