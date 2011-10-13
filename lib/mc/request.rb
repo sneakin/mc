@@ -59,6 +59,10 @@ module MC
     end
   end
 
+  class RespawnRequest < Request
+    packet_id 0x09
+  end
+
   class PlayerOnGround < Request
     packet_id 0x0A
     attr_accessor :on_ground

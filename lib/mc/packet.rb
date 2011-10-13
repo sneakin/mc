@@ -103,6 +103,19 @@ module MC
     end
   end
 
+  class Respawn < Packet
+    packet_id 0x09
+    attr_accessor :world, :difficulty, :creative_mode, :world_height, :map_seed
+
+    def deserialize(parser)
+      self.world = parser.read_byte
+      self.difficulty = parser.read_byte
+      self.creative_mode = parser.read_byte
+      self.world_height = parser.read_short
+      self.map_seed = parser.read_long
+    end
+  end
+
   class NamedEntitySpawn < Packet
     packet_id 0x14
     attr_accessor :entity_id, :name, :position, :yaw, :pitch, :current_item

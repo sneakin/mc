@@ -223,6 +223,10 @@ module MC
       self.health = packet.health
       self.food = packet.food
       self.food_saturation = packet.food_saturation
+
+      if health < 0
+        send_packet(MC::RespawnRequest.new)
+      end
     end
 
     attr_accessor :experience_total, :experience_level, :experience_current
