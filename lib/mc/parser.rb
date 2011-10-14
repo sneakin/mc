@@ -65,7 +65,8 @@ module MC
     end
 
     def read_ulonglong
-      @io.read(8).unpack('Q')[0]
+      parts = @io.read(8).unpack('NN')
+      parts[0] << 32 | parts[1]
     end
 
     def read_char

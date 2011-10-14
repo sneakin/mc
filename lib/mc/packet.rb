@@ -674,8 +674,7 @@ module MC
     attr_accessor :time
 
     def deserialize(parser)
-      self.time = parser.read_double_float_big
-      #self.time = io.read(8).unpack('Q')
+      self.time = parser.read_ulonglong
     end
   end
 
