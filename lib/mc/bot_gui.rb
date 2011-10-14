@@ -43,17 +43,17 @@ module MC
       height = 9
       floor = Array.new(height) { Array.new(width) }
 
-      height.times do |z|
-        width.times do |x|
-          floor[z][x] = bot.world[bot.position.x.to_i - width / 2 + x - 1, bot.position.y.to_i, bot.position.z.to_i - height / 2 + z]
+      height.times do |x|
+        width.times do |z|
+          floor[x][z] = bot.world[bot.position.x.to_i - height / 2 + x - 1, bot.position.y.to_i, bot.position.z.to_i - width / 2 + z]
         end
       end
 
       floor[height / 2][width / 2] = 'X'
 
       box(65, 1) do |boxer|
-        floor.each do |row|
-          boxer.puts(row.collect { |c| if c == 'X'; c; else; map_char(c); end }.join)
+        floor.each do |col|
+          boxer.puts(col.reverse.collect { |c| if c == 'X'; c; else; map_char(c); end }.join)
         end
       end
     end
