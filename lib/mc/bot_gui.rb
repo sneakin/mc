@@ -125,12 +125,15 @@ module MC
     end
 
     def map_char(block)
+      return '?' unless block.loaded?
+
       case block.type
       when 0 then ' '
       when 8 then '~'
       when 9 then '~'
       when 10 then '^'
       when 11 then '^'
+      when 17 then '@'
       when 50 then '`'
       when 64 then '|'
       when 71 then '|'
