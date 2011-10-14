@@ -149,7 +149,7 @@ module MC
     end
 
     def say(msg)
-      send_packet(MC::ChatMessage.new(msg))
+      send_packet(MC::ChatMessage.new(msg.to_s))
     end
 
     attr_accessor :position, :stance, :yaw, :pitch, :on_ground

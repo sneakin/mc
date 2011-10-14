@@ -12,6 +12,10 @@ module MC
       super(name, connection)
       self.admins = admins
       @last_time = Time.now
+
+      register_handler(MapChunk, :on_block_change)
+      register_handler(BlockChange, :on_block_change)
+      register_handler(MultiBlockChange, :on_block_change)
     end
 
     def is_admin?(nick)
@@ -46,9 +50,10 @@ module MC
       when /world info/ then say_world_info
       when /save chunks (.*)/ then save_chunks($1); say("Saved to #{$1}")
       when /save chunk (.*)/ then save_chunk($1, world.chunk_at(position.x, position.y, position.z)); say("Saved current chunk to #{$1}")
-      when /move to (#{Float}) (#{Float}) (#{Float})/ then walk_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{3} #{$5}")
+      when /move to (#{Float}) (#{Float}) (#{Float})/ then walk_to($1.to_f, $3.to_f, $5.to_f); say("Moving to #{$1} #{$3} #{$5}")
       when /move to (#{Float}) (#{Float})/ then walk_to($1.to_f, y, $3.to_f); say("Moving to #{$1} #{$3}")
       when /move to (\w+)/ then say("Moving to #{move_to_entity($1)}")
+      when /at target\?/ then say("At #{@path_finder.target}? #{@path_finder.at_target?}")
       when /stop/ then stop_moving
       end
     end
@@ -68,24 +73,39 @@ module MC
     def walk_to(x, y, z)
       @path_finder ||= PathFinder.new(world, position, nil)
       @path_finder.target = Vector.new(x, y, z)
-      MC.logger.debug("Path: #{position} -> #{@path_finder.target}")
+      @path = nil
       tick_motion
     end
 
     def tick_motion
-      return if position.nil? || @path_finder.nil? || @path_finder.at_target?
+      return if position.nil? || @path_finder.nil? || @path_finder.target == nil
 
-      @path_finder.position = position - Vector.new(0.5, 0, 0.5)
-      path = @path_finder.plot
-      MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{path.collect(&:to_s).join("; ")}")
-      if path.empty?
-        say("No way to move to #{@path_finder.target}")
+      @path_finder.position = position # - Vector.new(0.5, 0, 0.5)
+      if @path_finder.target && @path_finder.at_target?
         @path_finder.target = nil
-      else
-        MC.logger.debug("Moving from #{position} to #{path[0]}")
-        move_to(path[0].x + 0.5, path[0].y, path[0].z + 0.5)
-        say("Made it") if @path_finder.at_target?
+        say("Made it")
+        return
       end
+
+      @path ||= @path_finder.plot
+      MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{@path.collect(&:to_s).join("; ")}")
+      if @path.empty?
+#        if @path_finder.at_target?
+#         else
+#           say("No way to move to #{@path_finder.target}")
+#        end
+      else
+        MC.logger.debug("Moving from #{position} to #{@path[0]}")
+        move_to(@path[0].x + 0.5, @path[0].y, @path[0].z + 0.5)
+        @path.shift
+      end
+    rescue ArgumentError
+      say($!)
+      @path_finder.target = nil
+    end
+
+    def on_block_change(packet)
+      @path = nil
     end
 
     def move_to_entity(name)

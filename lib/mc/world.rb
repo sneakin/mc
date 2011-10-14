@@ -3,9 +3,10 @@ module MC
     class Block
       attr_accessor :type, :metadata, :lights, :sky_light
 
-      def initialize(type = 1, metadata = 0)
+      def initialize(type = 0, metadata = 0, loaded = false)
         self.type = type
         self.metadata = metadata
+        @loaded = loaded
       end
 
       def update(update_block)
@@ -13,6 +14,11 @@ module MC
         self.metadata = update_block.metadata
         self.lights = update_block.lights if update_block.lights
         self.sky_light = update_block.sky_light if update_block.sky_light
+        @loaded = true
+      end
+
+      def loaded?
+        @loaded
       end
     end
 

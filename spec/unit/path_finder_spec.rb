@@ -8,12 +8,34 @@ describe MC::PathFinder do
 
     context 'open room' do
       let(:map_data) do
-        [ [7, 7, 7, 7, 7, 7],
-          [7, 0, 0, 0, 0, 7],
-          [7, 0, 0, 0, 0, 7],
-          [7, 0, 0, 0, 0, 7],
-          [7, 0, 0, 0, 0, 7],
-          [7, 7, 7, 7, 7, 7],
+        [ [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7],
+          ],
+          [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7],
+          ],
+          [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7],
+          ],
+          [ [7, 7, 7, 7, 7, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 0, 0, 0, 0, 7],
+            [7, 7, 7, 7, 7, 7],
+          ]
         ]
       end
 
@@ -62,6 +84,15 @@ describe MC::PathFinder do
                            MC::Vector.new(-3, 0, -3),
                            MC::Vector.new(-4, 0, -4)
                          ]
+        end
+      end
+
+      context 'above the target' do
+        let(:starting) { MC::Vector.new(1, 1, 1) }
+        let(:ending) { MC::Vector.new(1, 0, 1) }
+
+        it "returns a path that goes down to the target" do
+          plot.should == [ MC::Vector.new(1, 0, 1) ]
         end
       end
     end
@@ -137,8 +168,11 @@ describe MC::PathFinder do
       let(:starting) { MC::Vector.new(1, 0, 1) }
       let(:ending) { MC::Vector.new(5, 0, 4) }
 
-      it "returns an empty path" do
-        plot.should be_empty
+      it "returns a path that gets closer to the taregt" do
+        plot.should == [ MC::Vector.new(1, 0, 2),
+                         MC::Vector.new(1, 0, 3),
+                         MC::Vector.new(1, 0, 4)
+                       ]
       end
     end
 
@@ -157,7 +191,7 @@ describe MC::PathFinder do
         let(:starting) { MC::Vector.new(1, 0, 1) }
         let(:ending) { MC::Vector.new(5, 0, 4) }
 
-        it "returns an empty list" do
+        it "returns a path that gets closer to the target" do
           plot.should == []
         end
       end
@@ -166,8 +200,12 @@ describe MC::PathFinder do
         let(:starting) { MC::Vector.new(5, 0, 4) }
         let(:ending) { MC::Vector.new(1, 0, 1) }
 
-        it "returns an empty path" do
-          plot.should be_empty
+        it "returns a path that moves closer to the target" do
+          plot.should == [ MC::Vector.new(4, 0, 4),
+                           MC::Vector.new(3, 0, 4),
+                           MC::Vector.new(2, 0, 4),
+                           MC::Vector.new(1, 0, 4)
+                         ]
         end
       end
     end
@@ -276,6 +314,204 @@ describe MC::PathFinder do
       end
     end
 
+    context 'step' do
+      context 'that is east-west' do
+        let(:map_data) do
+          [ [ [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [7, 7, 7, 7, 7],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+            ],
+            [ [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 7, 0, 7, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+            ],
+            [ [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+            ]
+          ]
+        end
+
+        let(:starting) { MC::Vector.new(2, 1, 2) }
+
+        context 'going north west' do
+          let(:ending) { MC::Vector.new(1, 0, 1) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(2, 0, 1), MC::Vector.new(1, 0, 1) ]
+          end
+        end
+
+        context 'going north east' do
+          let(:ending) { MC::Vector.new(3, 0, 1) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(2, 0, 1), MC::Vector.new(3, 0, 1) ]
+          end
+        end
+
+        context 'going south west' do
+          let(:ending) { MC::Vector.new(1, 0, 3) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(2, 0, 3), MC::Vector.new(1, 0, 3) ]
+          end
+        end
+
+        context 'going south east' do
+          let(:ending) { MC::Vector.new(3, 0, 3) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(2, 0, 3), MC::Vector.new(3, 0, 3) ]
+          end
+        end
+      end
+
+      context 'that is north-south' do
+        let(:map_data) do
+          [ [ [0, 0, 7, 0, 0],
+              [0, 0, 7, 0, 0],
+              [0, 0, 7, 0, 0],
+              [0, 0, 7, 0, 0],
+              [0, 0, 7, 0, 0],
+            ],
+            [ [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+            ],
+            [ [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+            ]
+          ]
+        end
+
+        let(:starting) { MC::Vector.new(2, 1, 2) }
+
+        context 'going north west' do
+          let(:ending) { MC::Vector.new(1, 0, 1) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(1, 0, 2), MC::Vector.new(1, 0, 1) ]
+          end
+        end
+
+        context 'going north east' do
+          let(:ending) { MC::Vector.new(3, 0, 1) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(3, 0, 2), MC::Vector.new(3, 0, 1) ]
+          end
+        end
+
+        context 'going south west' do
+          let(:ending) { MC::Vector.new(1, 0, 3) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(1, 0, 2), MC::Vector.new(1, 0, 3) ]
+          end
+        end
+
+        context 'going south east' do
+          let(:ending) { MC::Vector.new(3, 0, 3) }
+
+          it "does not cut the corner" do
+            plot.should == [ MC::Vector.new(3, 0, 2), MC::Vector.new(3, 0, 3) ]
+          end
+        end
+      end
+    end
+
+    context 'strange step' do
+      let(:map_data) do
+        [ [ [0, 0, 0, 0, 0],
+            [0, 0, 7, 7, 0],
+            [7, 7, 7, 7, 7],
+            [0, 0, 7, 7, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 7, 0, 7, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ]
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(2, 1, 2) }
+
+      context 'going north' do
+        let(:ending) { MC::Vector.new(2, 0, 0) }
+
+        it "straight lines to the target" do
+          plot.should == [ MC::Vector.new(2, 1, 1), MC::Vector.new(2, 0, 0) ]
+        end
+      end
+
+      context 'going south' do
+        let(:ending) { MC::Vector.new(2, 0, 4) }
+
+        it "straight lines to the target" do
+          plot.should == [ MC::Vector.new(2, 1, 3), MC::Vector.new(2, 0, 4) ]
+        end
+      end
+    end
+
+    context 'step down but with headlevel obstacle' do
+      let(:map_data) do
+        [ [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [7, 7, 7, 7, 7],
+            [0, 7, 7, 0, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 7, 0, 7, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+          ],
+          [ [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 7, 0],
+            [0, 0, 0, 7, 0],
+            [0, 0, 0, 0, 0],
+          ]
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(2, 1, 2) }
+
+      context 'under the obstacle' do
+        let(:ending) { MC::Vector.new(3, 0, 3) }
+
+        it "goes down and around" do
+          plot.should == [ MC::Vector.new(2, 1, 3),
+                           MC::Vector.new(2, 0, 4),
+                           MC::Vector.new(3, 0, 4),
+                           MC::Vector.new(3, 0, 3)
+                         ]
+        end
+      end
+    end
+
     context 'into blocked cell' do
       let(:map_data) do
         [ [0, 0, 0, 0, 0],
@@ -289,8 +525,8 @@ describe MC::PathFinder do
       let(:starting) { MC::Vector.new(0, 0, 0) }
       let(:ending) { MC::Vector.new(2, 0, 2)}
 
-      it "does not try to cerate a path" do
-        plot.should == []
+      it "raises an error" do
+        lambda { subject.plot }.should raise_error(ArgumentError)
       end
     end
 
@@ -341,7 +577,21 @@ describe MC::PathFinder do
     end
 
     context 'into an unloaded chunk' do
-      it "stops at the chunk"
+      let(:map_data) do
+        [ [ 0, 0, 0 ],
+          [ 0, 0, 0 ],
+          [ 0, 0, 0 ]
+        ]
+      end
+
+      let(:starting) { MC::Vector.new(0, 0, 1) }
+      let(:ending) { MC::Vector.new(10, 0, 1) }
+
+      it "stops at the chunk" do
+        plot.should == [ MC::Vector.new(1, 0, 1),
+                         MC::Vector.new(2, 0, 1)
+                       ]
+      end
 
       context 'when the chunk is loaded after the path is calculated' do
         it "routes into the chunk"
@@ -389,7 +639,7 @@ describe MC::PathFinder do
       before do
         # initial path
         path = plot
-        path.should_not be_empty
+        path.should_not == []
 
         # take a a step on the path
         subject.position = path[0]
@@ -423,7 +673,7 @@ describe MC::PathFinder do
         end
 
         it "returns no path" do
-          subject.plot.should be_empty
+          subject.plot.should == [ MC::Vector.new(1, 0, 1) ]
         end
       end
     end
@@ -494,9 +744,8 @@ describe MC::PathFinder do
 
       it "zigs and zags around the partial wall" do
         path = plot
-        path.should == [ MC::Vector.new(2, 0, 1),
-                         MC::Vector.new(2, 1, 2),
-                         MC::Vector.new(3, 1, 2),
+        path.should == [ MC::Vector.new(1, 1, 2),
+                         MC::Vector.new(2, 0, 3),
                          MC::Vector.new(3, 1, 3),
                          MC::Vector.new(4, 0, 3),
                          MC::Vector.new(4, 0, 4)
@@ -504,6 +753,7 @@ describe MC::PathFinder do
       end
     end
 
+    context 'dropping from a cliff'
     context 'with minable obstacles'
     context 'with water'
     context 'with lava'

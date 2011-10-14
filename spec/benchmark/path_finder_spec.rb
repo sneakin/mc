@@ -1,3 +1,4 @@
+require 'rspec-prof'
 require 'benchmark'
 require 'mc/path_finder'
 require 'mc/spec/path_finder'
@@ -44,6 +45,12 @@ describe MC::PathFinder do
         end
 
         times.real.should_not >= expected_total_time
+      end
+
+      profile do
+        it "should be awesome" do
+          100.times { plot.should_not be_empty }
+        end
       end
     end
   end

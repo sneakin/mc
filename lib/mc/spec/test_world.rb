@@ -31,7 +31,7 @@ module MC
       end
 
       def make_solid_floor(width, length, block_type)
-        Array.new(length) { Array.new(width) { MC::World::Block.new(block_type) } }
+        Array.new(length) { Array.new(width) { MC::World::Block.new(block_type, 0, true) } }
       end
 
       def init_data(data)
@@ -46,15 +46,17 @@ module MC
 
       def blockify_floor(data)
         data.collect { |row|
-          row.collect { |block_id| MC::World::Block.new(block_id) }
+          row.collect { |block_id| MC::World::Block.new(block_id, 0, true) }
         }
       end
 
+      NullBlock = MC::World::Block.new(7, 0, false)
+
       def [](x, y, z)
-        @data[y - @origin_y][z - @origin_z][x - @origin_x]
+        @data[y - @origin_y][z - @origin_z][x - @origin_x] ||
+          NullBlock
       rescue
-        #MC::World::Block.new(7)
-        raise ArgumentError.new("Invalid coordinate #{x}, #{y}, #{z}")
+        NullBlock
       end
 
       def width

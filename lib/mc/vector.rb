@@ -6,42 +6,20 @@ module MC
     Y = 1
     Z = 2
 
-    attr_reader :data
-
     def initialize(x, y, z)
-      @data = [ x, y, z ]
+      @x = x
+      @y = y
+      @z = z
     end
 
-    def x
-      @data[X]
-    end
-
-    def x=(v)
-      @data[X] = v
-    end
-
-    def y
-      @data[Y]
-    end
-
-    def y=(v)
-      @data[Y] = v
-    end
-
-    def z
-      @data[Z]
-    end
-
-    def z=(v)
-      @data[Z] = v
-    end
+    attr_accessor :x, :y, :z
 
     def nan?
       x.nan? || y.nan? || z.nan?
     end
 
     def to_s
-      "<#{data.join(", ")}>"
+      "<#{x}, #{y}, #{z}>"
     end
 
     def +(other)
@@ -66,8 +44,12 @@ module MC
       end
     end
 
+    def length_square
+      x ** 2 + y ** 2 + z ** 2
+    end
+
     def length
-      Math.sqrt(x ** 2 + y ** 2 + z ** 2)
+      Math.sqrt(length_square)
     end
 
     def distance_to(other)
@@ -85,6 +67,16 @@ module MC
 
     def clamp
       self.class.new(x.to_i, y.to_i, z.to_i)
+    end
+
+    def round
+      self.class.new(x.round, y.round, z.round)
+    end
+
+    def to_block_position
+      self.class.new(x < 0 ? x.floor : x.to_i,
+                     y < 0 ? y.floor : y.to_i,
+                     z < 0 ? z.floor : z.to_i)
     end
 
     def ==(other)

@@ -4,8 +4,12 @@ require 'logger'
 module MC
   Version = 17
 
-  def self.logger
-    @logger ||= Logger.new($stderr, Logger::DEBUG)
+  class << self
+    attr_writer :logger
+
+    def logger
+      @logger ||= Logger.new($stderr, Logger::DEBUG)
+    end
   end
 end
 
