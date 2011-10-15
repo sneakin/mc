@@ -1,3 +1,5 @@
+require 'rainbow'
+
 module MC
   autoload :Mobs, 'mc/mobs'
   autoload :Items, 'mc/items'
@@ -53,7 +55,7 @@ module MC
 
       box(65, 1) do |boxer|
         floor.each do |col|
-          boxer.puts(col.reverse.collect { |c| if c == 'X'; c; else; map_char(c); end }.join)
+          boxer.puts(col.reverse.collect { |c| if c == 'X'; c.color(:red); else; map_char(c); end }.join)
         end
       end
     end
@@ -86,7 +88,7 @@ module MC
     def print_entity_count
       box(1, 18) do |boxer|
         boxer.puts "== Entities =="
-        boxer.puts(entity_count_by_type.collect { |(type, count)| "#{Mobs[type]}\t#{count}" }.join("\n"))
+        boxer.puts(entity_count_by_type.collect { |(type, count)| "%s%s%4i" % [ Mobs[type], " " * (16 - Mobs[type].length), count ] }.join("\n"))
       end
     end
 
@@ -125,18 +127,23 @@ module MC
     end
 
     def map_char(block)
-      return '?' unless block.loaded?
+      return '?'.color(64, 64, 64) unless block.loaded?
 
       case block.type
       when 0 then ' '
-      when 8 then '~'
-      when 9 then '~'
-      when 10 then '^'
-      when 11 then '^'
-      when 17 then '@'
-      when 50 then '`'
-      when 64 then '|'
-      when 71 then '|'
+      when 1 then '#'.color(:default)
+      when 2 then '#'.color(:green)
+      when 3 then '#'.color(255, 64, 0)
+      when 8 then '~'.color(:blue)
+      when 9 then '~'.color(:blue)
+      when 10 then '^'.color(:red)
+      when 11 then '^'.color(:red)
+      when 12 then '.'.color(:yellow)
+      when 17 then '@'.color(128, 64, 0)
+      when 18 then '#'.color(0, 128, 0)
+      when 50 then '`'.color(255, 255, 0)
+      when 64 then '|'.color(255, 255, 128)
+      when 71 then '|'.color(255, 255, 128)
       when 53 then '>'
       when 67 then '>'
       when 108 then '>'

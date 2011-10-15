@@ -3,6 +3,7 @@ source :rubygems
 gem 'rspec'
 gem 'active_support'
 gem 'i18n'
+gem 'rainbow'
 
 group :test do
   gem 'ruby-prof'
