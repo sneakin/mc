@@ -39,8 +39,8 @@ module MC
     def print_map
       return if bot.position.nil? || bot.position.nan?
 
-      width = 19
-      height = 9
+      width = 32
+      height = 16
       floor = Array.new(height) { Array.new(width) }
 
       height.times do |x|
