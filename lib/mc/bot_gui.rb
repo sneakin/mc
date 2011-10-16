@@ -14,6 +14,7 @@ module MC
       @packet_rate = 0
       @mapper = GUI::Mapper.new(bot.world)
       @console = Array.new
+      @term = GUI::Terminal.new($stdout)
     end
 
     def quit!
@@ -27,15 +28,15 @@ module MC
     def update
       process_input
 
-      reset_screen
+      clear_stats
       print_status
       print_slots
       print_inventory
       print_entity_count
       print_players
-      print_map
       print_chat_messages
       print_console
+      print_map
       print_prompt
     end
 
@@ -81,8 +82,7 @@ module MC
     end
 
     def box(column, row, &block)
-      boxer = GUI::Boxer.new(column, row)
-      block.call(boxer)
+      @term.box(column, row, &block)
     end
 
     def print_slots
@@ -152,11 +152,16 @@ module MC
     end
 
     def print_prompt
-      $stdout.write("> ")
+      box(1, 41) do |boxer|
+        boxer.write("> ")
+      end
     end
 
-    def reset_screen
-      print("\033[0;0f\033[2J")
+    def clear_stats
+      (1..@term.height).each do |line|
+        @term.move_cursor_to(64, line)
+        @term.clear_left
+      end
     end
   end
 end
