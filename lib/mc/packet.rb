@@ -494,6 +494,23 @@ module MC
     end
   end
 
+  class Explosion < Packet
+    packet_id 0x3c
+    attr_accessor :position, :radius, :record_count, :records
+
+    def deserialize(parser)
+      self.position = Vector.new(parser.read_double_float_big,
+                                 parser.read_double_float_big,
+                                 parser.read_double_float_big)
+      self.radius = parser.read_float
+      self.record_count = parser.read_long
+      self.records = Array.new
+      record_count.times do |i|
+        records << Vector.new(parser.read_byte, parser.read_byte, parser.read_byte)
+      end
+    end
+  end
+
   class PickupSpawn < Packet
     packet_id 0x15
     attr_accessor :entity_id, :item_id, :count_id, :damage, :x, :y, :z, :rotation, :pitch, :roll
