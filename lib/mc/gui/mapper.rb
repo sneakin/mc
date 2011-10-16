@@ -10,15 +10,27 @@ module MC
         @world = world
       end
 
-      def print(io, position, width, height)
+      def print(io, position, width, height, entities)
         floor = Array.new(height) { Array.new(width) }
+
+        min = Vector.new(position.x.to_i - height / 2,
+                         position.y - 2,
+                         position.z.to_i - width / 2)
+        max = min + Vector.new(height, position.y + 3, width)
 
         height.times do |x|
           width.times do |z|
-            floor[x][z] = map_char(position.x.to_i - height / 2 + x - 1,
+            floor[x][z] = map_char(min.x + x - 1,
                                    position.y.to_i,
-                                   position.z.to_i - width / 2 + z)
+                                   min.z + z)
           end
+        end
+
+        entities.select { |ent|
+          ent.position >= min && ent.position < max
+        }.each do |ent|
+          p = (ent.position - position).clamp
+          floor[p.x + height / 2][p.z + width / 2] = '@'.color(:red)
         end
 
         floor[height / 2][width / 2] = 'X'.color(:red)
@@ -30,11 +42,11 @@ module MC
 
 
       BlockChars = {
-        :rock => " ‧⩓⩓⩔⩔  ",
+        :rock => " ∙⩓⩓⩔⩔  ",
         :liquid => ' ~⩓⩓⩔⩔  ',
-        :torch => ' .ii``::',
+        :torch => ' •ii``::',
         :door => '|-',
-        :tree => ' .oo∘∘OO',
+        :tree => ' •oo∘∘OO',
       }
 
       def map_char(x, y, z)

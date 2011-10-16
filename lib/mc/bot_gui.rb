@@ -77,7 +77,7 @@ module MC
       height = 16
 
       box(65, 1) do |boxer|
-        @mapper.print(boxer, bot.position, width, height)
+        @mapper.print(boxer, bot.position, width, height, bot.entities.values + bot.named_entities)
       end
     end
 
@@ -107,7 +107,7 @@ module MC
 
     def print_entity_count
       box(1, 18) do |boxer|
-        boxer.puts "== Entities =="
+        boxer.puts "== Entities (#{bot.entities.size}) =="
         boxer.puts(entity_count_by_type.collect { |(type, count)| "%s%s%4i" % [ Mobs[type], " " * (16 - Mobs[type].length), count ] }.join("\n"))
       end
     end
