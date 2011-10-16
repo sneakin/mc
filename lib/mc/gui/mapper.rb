@@ -2,15 +2,28 @@
 require 'rainbow'
 
 module MC
-  module GUI
-    class Mapper
-      attr_reader :world
+  autoload :Vector, 'mc/vector'
+  autoload :Mobs, 'mc/mobs'
 
-      def initialize(world)
+  module GUI
+    autoload :Boxer, 'mc/gui/boxer'
+
+    class Mapper
+      attr_reader :world, :width, :height
+      attr_accessor :position
+
+      def initialize(world, width, height)
         @world = world
+        @width = width
+        @height = height
+        @position = Vector.new(0, 0, 0)
       end
 
-      def print(io, position, width, height, entities)
+      def position=(position)
+        @position = position
+      end
+
+      def draw_world(terminal)
         floor = Array.new(height) { Array.new(width) }
 
         min = Vector.new(position.x.to_i - height / 2,
@@ -26,20 +39,43 @@ module MC
           end
         end
 
-        entities.select { |ent|
-          ent.position >= min && ent.position < max
-        }.each do |ent|
-          p = (ent.position - position).clamp
-          floor[p.x + height / 2][p.z + width / 2] = '@'.color(:red)
-        end
-
         floor[height / 2][width / 2] = 'X'.color(:red)
 
         floor.each do |col|
-          io.puts(col.reverse.join)
+          terminal.puts(col.reverse.join)
         end
       end
 
+      def draw_entities(terminal, entities)
+        min = Vector.new(position.x.to_i - height / 2 - 1,
+                         position.y - 2,
+                         position.z.to_i - width / 2)
+        max = min + Vector.new(height, position.y + 3, width)
+
+        entities.each do |ent|
+	  p = ent.position.clamp
+          next unless p >= min && p < max
+          p = (ent.position - position).clamp
+          terminal.move_cursor_to(width - (p.z + width / 2 + 1), p.x + height / 2)
+          terminal.write(Mobs[ent.mob_type].char.color(:red))
+        end
+      end
+
+      def draw_path(terminal, path)
+        return if path.blank?
+        min = Vector.new(position.x.to_i - height / 2 - 1,
+                         0,
+                         position.z.to_i - width / 2)
+        max = min + Vector.new(height, world.height, width)
+
+        path.each do |point|
+  	  point = point.clamp
+	  next unless point >= min && point < max
+          p = (point - position).clamp
+          terminal.move_cursor_to(width - (p.z + width / 2 + 1), p.x + height / 2)
+          terminal.write('X'.color(:cyan))
+        end
+      end
 
       BlockChars = {
         :rock => " ∙⩓⩓⩔⩔  ",
@@ -62,7 +98,6 @@ module MC
         block = head if head.solid?
 
         solid_index = (feet.solid? ? 1 : 0) | (legs.solid? ? 1 : 0) << 1 | (head.solid? ? 1 : 0) << 2
-        MC.logger.debug("#{legs.inspect}\n#{feet.inspect}\n#{head.inspect}\n#{solid_index}")
 
         c = case block.type
             when 0 then ' '

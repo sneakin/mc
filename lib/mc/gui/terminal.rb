@@ -14,6 +14,10 @@ module MC
         @height = height
       end
 
+      def write(str)
+        @io.write(str)
+      end
+
       def reset
         move_cursor_to(0, 0)
         clear
@@ -24,7 +28,7 @@ module MC
       end
 
       def box(column, row, &block)
-        boxer = GUI::Boxer.new(column, row)
+        boxer = GUI::Boxer.new(self, column, row)
         block.call(boxer)
       end
 
@@ -41,7 +45,7 @@ module MC
       end
 
       def move_cursor_to(column, row)
-        escape("#{column};#{row}f")
+        escape("#{row};#{column}f")
       end
 
       def echo(yes)

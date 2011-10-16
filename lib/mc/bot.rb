@@ -70,6 +70,8 @@ module MC
       end
     end
 
+    attr_reader :path
+
     def stop_moving
       @path_finder.target = nil
     end

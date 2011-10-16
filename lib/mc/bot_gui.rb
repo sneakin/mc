@@ -12,7 +12,7 @@ module MC
       @bot = bot
       @packets = 0
       @packet_rate = 0
-      @mapper = GUI::Mapper.new(bot.world)
+      @mapper = GUI::Mapper.new(bot.world, 64, 16)
       @term = GUI::Terminal.new($stdout)
       @term.character_mode
       @term.echo(false)
@@ -33,14 +33,19 @@ module MC
     def update
       process_input
 
-      clear_stats
-      print_status
-      print_slots
-      print_inventory
-      print_entity_count
-      print_players
-      print_chat_messages
-      print_console
+      t = Time.now
+
+      if t.to_i % 2 == 0
+        clear_stats
+        print_status
+        print_slots
+        print_inventory
+        print_entity_count
+        print_players
+        print_chat_messages
+        print_console
+      end
+
       print_map
       print_prompt
     end
@@ -87,11 +92,11 @@ module MC
     def print_map
       return if bot.position.nil? || bot.position.nan?
 
-      width = 64
-      height = 16
-
       box(65, 1) do |boxer|
-        @mapper.print(boxer, bot.position, width, height, bot.entities.values + bot.named_entities)
+        @mapper.position = bot.position
+        @mapper.draw_world(boxer)
+        @mapper.draw_entities(boxer, bot.entities.values + bot.named_entities)
+        @mapper.draw_path(boxer, bot.path)
       end
     end
 
@@ -122,7 +127,7 @@ module MC
     def print_entity_count
       box(1, 18) do |boxer|
         boxer.puts "== Entities (#{bot.entities.size}) =="
-        boxer.puts(entity_count_by_type.collect { |(type, count)| "%s%s%4i" % [ Mobs[type], " " * (16 - Mobs[type].length), count ] }.join("\n"))
+        boxer.puts(entity_count_by_type.collect { |(type, count)| "%s%s%4i" % [ Mobs[type].name, " " * (16 - Mobs[type].name.length), count ] }.join("\n"))
       end
     end
 

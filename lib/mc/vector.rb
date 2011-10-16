@@ -87,6 +87,14 @@ module MC
       x >= other.x && y >= other.y && z >= other.z
     end
 
+    def >(other)
+      x > other.x && y > other.y && z > other.z
+    end
+
+    def <=(other)
+      x <= other.x && y <= other.y && z <= other.z
+    end
+
     def <(other)
       x < other.x && y < other.y && z < other.z
     end
