@@ -35,7 +35,7 @@ rate = 20
 done = false
 
 Signal.trap("INT") do
-  done = true
+  gui.quit!
 end
 
 gui_thread = Thread.new do
