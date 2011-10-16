@@ -83,6 +83,14 @@ module MC
       other != nil && x == other.x && y == other.y && z == other.z
     end
 
+    def >=(other)
+      x >= other.x && y >= other.y && z >= other.z
+    end
+
+    def <(other)
+      x < other.x && y < other.y && z < other.z
+    end
+
     def dot(other)
       x * other.x + y * other.y + z * other.z
     end
