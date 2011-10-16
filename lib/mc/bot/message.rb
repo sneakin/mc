@@ -7,7 +7,11 @@ class MC::Bot::Message
     else
       m = msg.match(/[Server] (.*)/)
       @from = nil
-      @body = m[1]
+      if m
+        @body = m[1]
+      else
+        @body = msg
+      end
     end
   end
 
