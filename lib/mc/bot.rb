@@ -13,9 +13,9 @@ module MC
       self.admins = admins
       @last_time = Time.now
 
-      register_handler(MapChunk, :on_block_change)
+      register_handler(MapChunk, :on_map_chunk)
       register_handler(BlockChange, :on_block_change)
-      register_handler(MultiBlockChange, :on_block_change)
+      register_handler(MultiBlockChange, :on_multi_block_change)
     end
 
     def is_admin?(nick)
@@ -63,8 +63,8 @@ module MC
     end
 
     def tick
-      now = Time.now
-      if (now - @last_time) > 0.04
+      now = (Time.now.to_f * 10).to_i
+      if now % 2 == 0
         tick_motion 
         @last_time =  now
       end
@@ -80,7 +80,7 @@ module MC
       @path_finder ||= PathFinder.new(world, position, nil)
       @path_finder.target = Vector.new(x, y, z)
       @path = nil
-      tick_motion
+      # tick_motion
     end
 
     def tick_motion
@@ -93,7 +93,7 @@ module MC
         return
       end
 
-      @path ||= @path_finder.plot
+      @path = @path_finder.plot if @path.blank?
       MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{@path.collect(&:to_s).join("; ")}")
       if @path.empty?
 #        if @path_finder.at_target?
@@ -110,9 +110,30 @@ module MC
       @path_finder.target = nil
     end
 
-    def on_block_change(packet)
-      @path = nil
+    def on_map_chunk(packet)
+      min = packet.position
+      max = packet.position + packet.size
+      if @path && @path.any? { |p| p >= min && p <= max }
+        @path = nil
+      end
     end
+
+    def on_block_change(packet)
+      if @path && @path.any? { |p| p.to_block_position == packet.position }
+        @path = nil
+      end
+    end
+
+   def on_multi_block_change(packet)
+     return if @path.blank?
+
+     packet.updates.each do |(pos, block)|
+       if @path.any? { |p| p == pos }
+         @path = nil
+         break
+       end
+     end
+   end
 
     def move_to_entity(name)
       ent = named_entities.find { |e| e.name =~ /#{name}/i }

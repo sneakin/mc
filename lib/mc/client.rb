@@ -355,6 +355,8 @@ module MC
       self.on_ground = packet.on_ground
 
       send_packet(PlayerPositionAndLook.new(position.x, position.y, position.z, self.stance, self.yaw, self.pitch, self.on_ground))
+
+      @path = nil if !@path.blank? && (@path[0] - position).length >= 1.5
     end
 
     class Window

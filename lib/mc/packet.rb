@@ -450,12 +450,12 @@ module MC
 
   class BlockChange < Packet
     packet_id 0x35
-    attr_accessor :x, :y, :z, :block_type, :meta_data
+    attr_accessor :position, :block_type, :meta_data
 
+    delegate :x, :x=, :y, :y=, :z, :z=, :to => :position
+    
     def deserialize(parser)
-      self.x = parser.read_long
-      self.y = parser.read_char
-      self.z = parser.read_long
+      self.position = Vector.new(parser.read_long, parser.read_char, parser.read_long)
       self.block_type = parser.read_byte
       self.meta_data = parser.read_byte
       #self.x, self.y, self.z, self.block_type, self.meta_data = io.read(11).unpack('NcNcc')
@@ -490,7 +490,7 @@ module MC
         ret[i] = [ position, block ]
       end
 
-      ret
+      @updates ||= ret
     end
   end
 
