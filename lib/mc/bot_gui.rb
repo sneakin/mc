@@ -13,8 +13,13 @@ module MC
       @packets = 0
       @packet_rate = 0
       @mapper = GUI::Mapper.new(bot.world)
-      @console = Array.new
       @term = GUI::Terminal.new($stdout)
+      @term.character_mode
+      @term.echo(false)
+      @term.reset
+
+      @console = Array.new
+      @cmd_line = ""
     end
 
     def quit!
@@ -44,8 +49,17 @@ module MC
       i, o, e = IO.select([$stdin], nil, nil, 0)
       return unless i && i.include?($stdin)
 
-      line = $stdin.readline
-      process_command(line.strip)
+      line = $stdin.readpartial(1024)
+      m = line.match(/^(.*)\n(.*)/)
+
+      while (c = line[0])
+        line = line[1..-1]
+        case c
+          when "\n" then process_command(@cmd_line); @cmd_line = ""
+          when "\x7f" then @cmd_line = @cmd_line[0, @cmd_line.length - 1] || ""
+          else @cmd_line += c
+        end
+      end
     end
 
     def process_command(cmdline)
@@ -153,7 +167,8 @@ module MC
 
     def print_prompt
       box(1, 41) do |boxer|
-        boxer.write("> ")
+        boxer.write("> #{@cmd_line}")
+        @term.clear_right
       end
     end
 

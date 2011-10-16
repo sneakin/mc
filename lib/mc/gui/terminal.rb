@@ -1,19 +1,17 @@
+require 'termios'
+
 module MC
   module GUI
     class Terminal
       Columns = `tput cols`.to_i
       Lines = `tput lines`.to_i
 
-      attr_reader :io, :width, :height, :cursor_x, :cursor_y
+      attr_reader :io, :width, :height
 
       def initialize(io = $stdout, width = Columns.to_i, height = Lines)
         @io = io
         @width = width
         @height = height
-        @cursor_x = 0
-        @curser_y = 0
-
-        reset
       end
 
       def reset
@@ -30,10 +28,32 @@ module MC
         block.call(boxer)
       end
 
+      def character_mode
+        t = Termios.tcgetattr($stdin)
+        t.lflag &= ~Termios::ICANON
+        Termios.tcsetattr($stdin, 0, t)
+      end
+
+      def line_mode
+        t = Termios.tcgetattr($stdin)
+        t.lflag |= Termios::ICANON
+        Termios.tcsetattr($stdin, 0, t)
+      end
+
       def move_cursor_to(column, row)
         escape("#{column};#{row}f")
-        @cursor_x = column
-        @cursor_y = row
+      end
+
+      def echo(yes)
+        t = Termios.tcgetattr($stdin)
+
+        if yes
+          t.lflag |= Termios::ECHO
+        else
+          t.lflag &= ~Termios::ECHO
+        end
+
+        Termios.tcsetattr($stdin, 0, t)
       end
 
       def clear
@@ -42,6 +62,10 @@ module MC
 
       def clear_left
         escape("1K")
+      end
+
+      def clear_right
+        escape("0K")
       end
     end
   end

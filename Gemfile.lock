@@ -20,6 +20,7 @@ GEM
       ruby-prof
       sc-core-ext (>= 1.2.1)
     ruby-prof (0.10.8)
+    ruby-termios (0.9.6)
     sc-core-ext (1.2.1)
       activesupport (>= 2.3.5)
 
@@ -33,3 +34,4 @@ DEPENDENCIES
   rspec
   rspec-prof
   ruby-prof
+  ruby-termios

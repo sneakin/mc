@@ -4,6 +4,7 @@ gem 'rspec'
 gem 'active_support'
 gem 'i18n'
 gem 'rainbow'
+gem 'ruby-termios'
 
 group :test do
   gem 'ruby-prof'
