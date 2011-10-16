@@ -41,7 +41,7 @@ end
 gui_thread = Thread.new do
   begin
     gui.update
-    sleep 0.2
+    sleep 0.1 # lets not hog
   rescue
     gui.quit!
     MC.logger.fatal("GUI Thread Exception\n#{$!}\n#{$!.message}\n#{$!.backtrace.join("\n")}")
@@ -58,7 +58,6 @@ begin
 
   gui.packets = packets
   gui.packet_rate = packet_rate
-  #gui.update
 end until gui.done?
 
 puts "Bye"
