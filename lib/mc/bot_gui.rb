@@ -73,7 +73,7 @@ module MC
     def print_map
       return if bot.position.nil? || bot.position.nan?
 
-      width = 32
+      width = 64
       height = 16
 
       box(65, 1) do |boxer|
