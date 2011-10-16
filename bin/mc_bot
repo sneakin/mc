@@ -10,6 +10,8 @@ host = 'li172-212.members.linode.com'
 nick = ARGV[0] || 'Bot'
 admins = %W(SneakyDean)
 
+MC.logger = Logger.new("log", Logger::DEBUG)
+
 socket = TCPSocket.new(host, 25565)
 connection = MC::Connection.new(socket)
 bot = MC::Bot.new(nick, connection, admins)
@@ -36,6 +38,16 @@ Signal.trap("INT") do
   done = true
 end
 
+gui_thread = Thread.new do
+  begin
+    gui.update
+    sleep 0.2
+  rescue
+    gui.quit!
+    MC.logger.fatal("GUI Thread Exception\n#{$!}\n#{$!.message}\n#{$!.backtrace.join("\n")}")
+  end until gui.done?
+end
+
 begin
   starting = Time.now
   packets = bot.process_packets
@@ -46,7 +58,7 @@ begin
 
   gui.packets = packets
   gui.packet_rate = packet_rate
-  gui.update
-end until done
+  #gui.update
+end until gui.done?
 
 puts "Bye"

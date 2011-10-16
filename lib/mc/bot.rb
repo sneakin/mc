@@ -29,7 +29,11 @@ module MC
       msg = Message.new(packet.message)
       return unless is_admin?(msg.from) && msg.for?(name)
 
-      case msg.body
+      process_command(msg.body)
+    end
+
+    def process_command(cmd_line)
+      case cmd_line
       when /hello/i then say("Hello")
       when /say (.*)/ then say($1)
         #when /look (-?\d+) (-?\d+)/ then send_packet(MC::PlayerPositionAndLook.new(x_absolute, y_absolute, z_absolute, stance, $1.to_i, $2.to_i, on_ground)) && send_packet(MC::ChatMessage.new("looking at #{$1} #{$2}"))

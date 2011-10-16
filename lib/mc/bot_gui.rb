@@ -12,9 +12,20 @@ module MC
       @bot = bot
       @packets = 0
       @packet_rate = 0
+      @console = Array.new
+    end
+
+    def quit!
+      @done = true
+    end
+
+    def done?
+      @done
     end
 
     def update
+      process_input
+
       reset_screen
       print_status
       print_slots
@@ -23,6 +34,25 @@ module MC
       print_players
       print_map
       print_chat_messages
+      print_console
+      print_prompt
+    end
+
+    def process_input
+      i, o, e = IO.select([$stdin], nil, nil, 0)
+      return unless i && i.include?($stdin)
+
+      line = $stdin.readline
+      process_command(line.strip)
+    end
+
+    def process_command(cmdline)
+      MC.logger.debug("GUI command: #{cmdline}")
+      if cmdline == 'quit'
+        quit!
+      else
+        @bot.process_command(cmdline)
+      end
     end
 
     private
@@ -122,8 +152,13 @@ module MC
       end
     end
 
-    def reset_screen
-      print("\033[0;0f\033[2J")
+    def print_console
+      box(1, 35) do |boxer|
+        boxer.puts "== Console =="
+        @console.reverse[0, 5].reverse.each do |msg|
+          boxer.puts "#{msg}"
+        end
+      end
     end
 
     def map_char(block)
@@ -151,6 +186,12 @@ module MC
       when 114 then '>'
       else '#'
       end
+    def print_prompt
+      $stdout.write("> ")
+    end
+
+    def reset_screen
+      print("\033[0;0f\033[2J")
     end
   end
 end
