@@ -12,6 +12,7 @@ module MC
       @bot = bot
       @packets = 0
       @packet_rate = 0
+      @mapper = GUI::Mapper.new(bot.world)
       @console = Array.new
     end
 
@@ -73,20 +74,9 @@ module MC
 
       width = 32
       height = 16
-      floor = Array.new(height) { Array.new(width) }
-
-      height.times do |x|
-        width.times do |z|
-          floor[x][z] = bot.world[bot.position.x.to_i - height / 2 + x - 1, bot.position.y.to_i, bot.position.z.to_i - width / 2 + z]
-        end
-      end
-
-      floor[height / 2][width / 2] = 'X'
 
       box(65, 1) do |boxer|
-        floor.each do |col|
-          boxer.puts(col.reverse.collect { |c| if c == 'X'; c.color(:red); else; map_char(c); end }.join)
-        end
+        @mapper.print(boxer, bot.position, width, height)
       end
     end
 
@@ -161,31 +151,6 @@ module MC
       end
     end
 
-    def map_char(block)
-      return '?'.color(64, 64, 64) unless block.loaded?
-
-      case block.type
-      when 0 then ' '
-      when 1 then '#'.color(:default)
-      when 2 then '#'.color(:green)
-      when 3 then '#'.color(255, 64, 0)
-      when 8 then '~'.color(:blue)
-      when 9 then '~'.color(:blue)
-      when 10 then '^'.color(:red)
-      when 11 then '^'.color(:red)
-      when 12 then '.'.color(:yellow)
-      when 17 then '@'.color(128, 64, 0)
-      when 18 then '#'.color(0, 128, 0)
-      when 50 then '`'.color(255, 255, 0)
-      when 64 then '|'.color(255, 255, 128)
-      when 71 then '|'.color(255, 255, 128)
-      when 53 then '>'
-      when 67 then '>'
-      when 108 then '>'
-      when 109 then '>'
-      when 114 then '>'
-      else '#'
-      end
     def print_prompt
       $stdout.write("> ")
     end

@@ -20,6 +20,10 @@ module MC
       def loaded?
         @loaded
       end
+
+      def solid?
+        type != 0
+      end
     end
 
     class ChunkUpdate
