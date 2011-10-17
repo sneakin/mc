@@ -4,11 +4,14 @@ gem 'rspec'
 gem 'active_support'
 gem 'i18n'
 gem 'rainbow'
-gem 'ruby-termios'
 
-group :test do
-  gem 'ruby-prof'
-  gem 'rspec-prof'
+platform :mri do
+  gem 'ruby-termios'
+
+  group :test do
+    gem 'ruby-prof'
+    gem 'rspec-prof'
+  end
 end
 
 group :development do

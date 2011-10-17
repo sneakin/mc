@@ -25,6 +25,7 @@ GEM
       activesupport (>= 2.3.5)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES
