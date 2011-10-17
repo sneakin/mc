@@ -69,10 +69,10 @@ module MC
         max = min + Vector.new(height, world.height, width)
 
         path.each do |point|
-  	  point = point.clamp
-	  next unless point >= min && point < max
-          p = (point - position).clamp
-          terminal.move_cursor_to(width - (p.z + width / 2 + 1), p.x + height / 2)
+          point = point.to_block_position
+          next unless point >= min && point < max
+          p = (point - position).to_block_position
+          terminal.move_cursor_to(width - (p.z + width / 2 + 2), p.x + height / 2 + 1)
           terminal.write('X'.color(:cyan))
         end
       end
