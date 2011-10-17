@@ -416,19 +416,44 @@ module MC
       send_packet(PlayerBlockPlacement.new(-1, -1, -1, -1, -1, 0, 0))
     end
 
-    def dig(dx, dy, dz, strikes = 50, face = MC::PlayerDigging::Face_Top)
-      send_packet(MC::ChatMessage.new("I am digging at #{x + dx} #{y + dy} #{z + dy}."))
+    Faces = [ [ [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ],
+                [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ],
+                [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ]
+              ],
+              [ [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_South, MC::PlayerDigging::Face_West ],
+                [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_West ],
+                [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_North, MC::PlayerDigging::Face_West ]
+              ],
+              [ [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ],
+                [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ],
+                [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ]
+              ]
+            ]
+
+    def determine_dig_face(point)
+      d = (point - (position + Vector.new(0, 2, 0))).normalize.round
+      Faces[d.y + 1][d.z + 1][d.x + 1]
+    end
+
+    def dig_at(point, strikes = 50, face = nil)
+      point = point.to_block_position
+      face ||= determine_dig_face(point)
+      send_packet(MC::ChatMessage.new("I am digging at #{point} on face #{face}."))
 
       # need to send a lot depending on the material and tool
       strikes.times do
         send_packet(MC::AnimationRequest.new(0, MC::AnimationRequest::SwingArm))
-        send_packet(MC::PlayerDigging.new(MC::PlayerDigging::Started, x + dx, y + dy, z + dz, face))
+        send_packet(MC::PlayerDigging.new(MC::PlayerDigging::Started, point.x, point.y, point.z, face))
       end
 
       if strikes > 1
-        send_packet(MC::PlayerDigging.new(MC::PlayerDigging::Finished, x + dx, y + dy, z + dz, face))
+        send_packet(MC::PlayerDigging.new(MC::PlayerDigging::Finished, point.x, point.y, point.z, face))
         send_packet(MC::AnimationRequest.new(0, MC::AnimationRequest::NoAnimation))
       end
+    end
+
+    def dig(dx, dy, dz, strikes = 50, face = nil)
+      dig_at(Vector.new(x + dx, y + dy, z + dz), strikes, face)
     end
 
     def place(dx, dy, dz, block_id = -1, direction = 2)
