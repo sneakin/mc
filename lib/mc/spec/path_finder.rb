@@ -1,4 +1,6 @@
 module MC
+  autoload :GUI, 'mc/gui'
+
   module Spec
     autoload :TestWorld, 'mc/spec/test_world'
 
@@ -14,17 +16,21 @@ module MC
         end
 
         def dump_map(world)
+          size = ending - starting
+          m = MC::GUI::Mapper.new(world, size.length + 4, size.length + 4)
+          m.position = starting
+          m.draw_world($stderr)
           $stderr.puts("World:\t#{world.width}, #{world.height}, #{world.length}")
-          world.origin_y.upto(world.origin_y + world.height - 1) do |y|
-            world.origin_z.upto(world.origin_z + world.length - 1) do |z|
+          world.origin_z.upto(world.origin_z + world.length - 1) do |z|
+            world.origin_y.upto(world.origin_y + world.height - 1) do |y|
               world.origin_x.upto(world.origin_x + world.width - 1) do |x|
-                $stderr.write("#{world[x, y, z].try(:type)}")
+                $stderr.write("%3i " % [ world[x, y, z].try(:type) ])
               end
-              $stderr.write("\n")
+              $stderr.write("   ")
             end
             $stderr.write("\n")
-            $stderr.write("\n")
           end
+          $stderr.write("\n")
         end
       end
     end

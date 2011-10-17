@@ -31,8 +31,8 @@ module MC
                          position.z.to_i - width / 2)
         max = min + Vector.new(height, position.y + 3, width)
 
-        height.times do |x|
-          width.times do |z|
+        height.to_i.times do |x|
+          width.to_i.times do |z|
             floor[x][z] = map_char(min.x + x - 1,
                                    position.y.to_i,
                                    min.z + z)
@@ -53,7 +53,7 @@ module MC
         max = min + Vector.new(height, position.y + 3, width)
 
         entities.each do |ent|
-	  p = ent.position.clamp
+          p = ent.position.clamp
           next unless p >= min && p < max
           p = (ent.position - position).clamp
           terminal.move_cursor_to(width - (p.z + width / 2 + 1), p.x + height / 2)
