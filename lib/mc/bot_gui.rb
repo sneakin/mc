@@ -84,7 +84,7 @@ module MC
         boxer.puts("Health:\t#{bot.health}\tFood:\t#{bot.food}\t#{bot.food_saturation}")
         boxer.puts("Position:\t#{bot.x}, #{bot.y}, #{bot.z}\t#{bot.stance}")
         boxer.puts("Rotation:\t#{bot.yaw} #{bot.pitch}")
-        boxer.puts("Time:\t#{bot.world.time}")
+        boxer.puts("Time:\t%i\t%.2f" % [ bot.world.time, bot.world.time / 24000.0 ]) if bot.world.time
         boxer.puts("On ground") if bot.on_ground
       end
     end
