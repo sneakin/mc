@@ -22,7 +22,7 @@ module MC
 
     class Worker
       def types
-        @types ||= Hash.new { |h, key| raise "Bad type id: %#x" % [ key ] }
+        @types ||= Hash.new { |h, key| raise "Bad type id, %#x, for class #{self.class}" % [ key ] }
       end
 
       def register(id, klass)
