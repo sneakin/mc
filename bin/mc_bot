@@ -10,7 +10,7 @@ host = 'li172-212.members.linode.com'
 nick = ARGV[0] || 'Bot'
 admins = %W(SneakyDean)
 
-MC.logger = Logger.new("log", Logger::DEBUG)
+MC.logger = Logger.new("log", ENV.has_key?('DEBUG') ? Logger::DEBUG : Logger::INFO)
 
 socket = TCPSocket.new(host, 25565)
 connection = MC::Connection.new(socket)
@@ -28,15 +28,18 @@ bot.login
 
 gui = MC::BotGui.new(bot)
 
+Signal.trap("INT") do
+  gui.quit!
+end
+
 packets = 0
 starting = Time.now
 ending = Time.now
 rate = 20
-done = false
 
-Signal.trap("INT") do
-  gui.quit!
-end
+# Signal.trap("INT") do
+#   gui.quit!
+# end
 
 gui_thread = Thread.new do
   begin
@@ -59,5 +62,10 @@ begin
   gui.packets = packets
   gui.packet_rate = packet_rate
 end until gui.done?
+
+if gui_thread.alive?
+  gui.quit!
+  gui_thread.join
+end
 
 puts "Bye"
