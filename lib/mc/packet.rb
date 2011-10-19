@@ -591,6 +591,17 @@ module MC
     end
   end
 
+  class ExperienceOrb < Packet
+    packet_id 0x1a
+    attr_accessor :entity_id, :position, :count
+
+    def deserialize(parser)
+      self.entity_id = parser.read_long
+      self.position = Vector.new(parser.read_long, parser.read_long, parser.read_long)
+      self.count = parser.read_short
+    end
+  end
+
   class SoundEffect < Packet
     packet_id 0x3D
     attr_accessor :effect_id, :x, :y, :z, :data
