@@ -224,7 +224,7 @@ module MC
       self.food = packet.food
       self.food_saturation = packet.food_saturation
 
-      if health < 0
+      if health <= 0
         send_packet(MC::RespawnRequest.new)
       end
     end
