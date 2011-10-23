@@ -21,8 +21,54 @@ module MC
         @loaded
       end
 
+      def bed_rock?
+        type == 7
+      end
+
+      def door?
+        type == 64 || type == 71
+      end
+
       def solid?
-        type != 0
+        type != 0 && type != 72 && type != 70 && type != 50 && type != 75 && type != 76
+      end
+
+      def passable_from?(face)
+        return !solid? unless door?
+        return false if face == Face_Top || face == Face_Bottom
+
+        hinge = metadata & 0x3
+        if (metadata & 0x4) != 0
+          case hinge
+          when 0 then face != Face_East && face != Face_West # NE
+          when 1 then face != Face_South && face != Face_North # SE hinge
+          when 2 then face != Face_West && face != Face_East # SW
+          when 3 then face != Face_North && face != Face_South # NW
+          end
+        else
+          case hinge
+          when 0 then face != Face_North && face != Face_South # NE
+          when 1 then face != Face_East && face != Face_West # SE hinge
+          when 2 then face != Face_South && face != Face_North # SW
+          when 3 then face != Face_West && face != Face_East # NW
+          end
+        end
+      end
+
+      def strength
+        if type == 7 || type == 8 || type == 9 || type == 10 || type == 11
+          (1.0 / 0)
+        elsif type == 0 || type == 50 || type == 75 || type == 76
+          0
+        elsif type == 64
+          1.0
+        elsif type == 18
+          40.0
+        elsif type == 3 || type == 2
+          80.0
+        else
+          100.0
+        end
       end
     end
 

@@ -39,7 +39,7 @@ module MC
           end
         end
 
-        floor[height / 2][width / 2] = 'X'.color(:red)
+        floor[height / 2][width / 2] = BlockChars[:player].color(:red)
 
         floor.each do |col|
           terminal.puts(col.reverse.join)
@@ -73,7 +73,7 @@ module MC
           next unless point >= min && point < max
           p = (point - position).to_block_position
           terminal.move_cursor_to(width - (p.z + width / 2 + 2), p.x + height / 2 + 1)
-          terminal.write('X'.color(:cyan))
+          terminal.write(BlockChars[:path].color(:cyan))
         end
       end
 
@@ -83,11 +83,27 @@ module MC
         :torch => ' •ii``::',
         :door => '|-',
         :tree => ' •oo∘∘OO',
+        :air => ' ',
+        :unknown => '?',
+        :path => 'X',
+        :player => 'X'
       }
+      # TODO: Chinese characters which need to be color coded differently.
+#       BlockChars = {
+#         :rock => "　岩岩岩岩岩岩岩",
+#         :liquid => '　水水水水水水水水',
+#         :torch => '　火火火火火火火',
+#         :door => '门门',
+#         :tree => '　树树树树树树树',
+#         :air => '　',
+#         :unknown => '零',
+#         :path => '〱',
+#         :player => '〠'
+#       }
 
       def map_char(x, y, z)
         legs = world[x, y, z]
-        return '?'.color(64, 64, 64) unless legs.loaded?
+        return BlockChars[:unknown].color(64, 64, 64) unless legs.loaded?
 
         feet = world[x, y - 1, z]
         head = world[x, y + 1, z]
@@ -100,7 +116,7 @@ module MC
         solid_index = (feet.solid? ? 1 : 0) | (legs.solid? ? 1 : 0) << 1 | (head.solid? ? 1 : 0) << 2
 
         c = case block.type
-            when 0 then ' '
+            when 0 then BlockChars[:air]
             when 1, 53, 67, 108, 109, 114 then BlockChars[:rock][solid_index]
             when 2 then BlockChars[:rock][solid_index]
             when 3 then BlockChars[:rock][solid_index]
@@ -111,13 +127,15 @@ module MC
             when 17 then BlockChars[:tree][solid_index]
             when 18 then BlockChars[:rock][solid_index]
             when 50 then BlockChars[:torch][solid_index]
-            when 64 then BlockChars[:door][0]
-            when 71 then BlockChars[:door][0]
+            when 64, 71 then BlockChars[:door][(block.passable_from?(Face_East)) ? 1 : 0]
             else BlockChars[:rock][solid_index]
             end
 
-        if head.solid? && legs.solid?
-          c.color(:default).background(*block_color(head.type))
+        if head.door? || legs.door?
+          b = head.door?? head : legs
+          c.color(:black).background(*block_color(b.type))
+        elsif head.solid? && legs.solid?
+          c.color(:default).background(*block_color(block.type))
         else
           c.color(*block_color(block.type))
         end
@@ -133,11 +151,12 @@ module MC
         when 8, 9 then :blue
         when 10, 11 then :red
         when 12 then :yellow
+        when 15 then [ 255, 128, 128 ]
         when 17 then [ 128, 64, 0 ]
         when 18 then [ 0, 128, 0 ]
         when 50 then :yellow
-        when 64 then :yellow
-        when 71 then :yellow
+        when 64 then [ 128, 128, 0 ]
+        when 71 then :white
         else [ 96, 96, 96 ]
         end
       end

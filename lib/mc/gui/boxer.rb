@@ -1,10 +1,10 @@
 module MC
   module GUI
     class Boxer
-      attr_reader :column, :row
+      attr_reader :column, :row, :terminal
 
       def initialize(terminal, column, row)
-        @term = terminal
+        @terminal = terminal
         @column = column
         @row = row
         @cursor_y = 0
@@ -28,8 +28,8 @@ module MC
       end
 
       def write(str)
-        @term.move_cursor_to(@column + @cursor_x, @row + @cursor_y)
-        @term.write(str)
+        terminal.move_cursor_to(@column + @cursor_x, @row + @cursor_y)
+        terminal.write(str)
         @cursor_x += str.length
         self
       end

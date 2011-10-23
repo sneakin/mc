@@ -14,7 +14,7 @@ module MC
 end
 
 require 'mc/session'
+require 'mc/faces'
 require 'mc/packet'
 require 'mc/request'
 require 'mc/client'
-
