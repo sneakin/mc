@@ -140,11 +140,20 @@ module MC
       c
     end
 
+    def neighboring_water?(point, direction)
+      block_at(point + Vector.new(0, 0, direction.z)).liquid? ||
+        block_at(point + Vector.new(0, 1, direction.z)).liquid? ||
+        block_at(point + Vector.new(direction.x, 0, 0)).liquid? ||
+        block_at(point + Vector.new(direction.x, 1, 0)).liquid?
+    end
+
     def cost_to_move(a, b)
       return Infinity if !loaded?(b)
 
       delta = b - a
       c = 1
+
+      return Infinity if neighboring_water?(b, delta)
 
       c += cost_to_clear(b)
       if delta.x.abs > 0 && delta.z.abs > 0

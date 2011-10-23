@@ -163,7 +163,7 @@ describe MC::PathFinder do
       end
     end
 
-    context 'solid wall, no solution' do
+    context 'solid wall' do
       let(:map_data) do
         [ [7, 7, 7, 7, 7, 7, 7],
           [7, 0, 7, 0, 0, 0, 7],
@@ -185,6 +185,7 @@ describe MC::PathFinder do
                        ]
       end
     end
+
 
     context 'boxed' do
       let(:map_data) do
@@ -1269,6 +1270,27 @@ describe MC::PathFinder do
       end
     end
 
+    context 'solid wall with water on the other side' do
+      let(:map_data) do
+        [ [7, 7, 7, 7, 7, 7, 7],
+          [7, 8, 3, 0, 0, 0, 7],
+          [7, 8, 3, 0, 0, 0, 7],
+          [7, 8, 3, 0, 0, 0, 7],
+          [7, 8, 3, 0, 0, 0, 7],
+          [7, 7, 7, 7, 7, 7, 7],
+        ]
+      end
+
+      let(:starting) { v(4, 0, 2) }
+      let(:ending) { v(1, 0, 2) }
+
+      it "returns a path that does not dig" do
+        plot.should == [ v(4, 0, 2),
+                         v(3, 0, 2)
+                       ]
+      end
+    end
+
     context 'dropping from a cliff'
     context 'with water'
     context 'with lava'
@@ -1277,5 +1299,6 @@ describe MC::PathFinder do
       # area seems to be a 36x36 area centered on the spawn point
       it "never returns a path that requires digging"
     end
+
   end
 end

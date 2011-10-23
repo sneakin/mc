@@ -33,6 +33,10 @@ module MC
         type != 0 && type != 72 && type != 70 && type != 50 && type != 75 && type != 76
       end
 
+      def liquid?
+        [ 8, 9, 10, 11 ].include?(type)
+      end
+
       def passable_from?(face)
         return !solid? unless door?
         return false if face == Face_Top || face == Face_Bottom
