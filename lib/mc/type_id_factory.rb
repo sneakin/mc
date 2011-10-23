@@ -4,7 +4,7 @@ module MC
   module TypeIdFactory
     def self.included(base)
       base.instance_eval <<-EOT
-        Factory = TypeIdFactory::Worker.new
+        Factory = TypeIdFactory::Worker.new(self)
 
         def types
           Factory.types
@@ -21,8 +21,12 @@ module MC
     end
 
     class Worker
+      def initialize(klass)
+        @klass = klass
+      end
+
       def types
-        @types ||= Hash.new { |h, key| raise "Bad type id, %#x, for class #{self.class}" % [ key ] }
+        @types ||= Hash.new { |h, key| raise "Bad type id, %#x, for class #{@klass}" % [ key ] }
       end
 
       def register(id, klass)
