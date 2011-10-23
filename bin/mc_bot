@@ -9,6 +9,7 @@ host = 'li172-212.members.linode.com'
 #host = 'localhost'
 nick = ARGV[0] || 'Bot'
 admins = %W(SneakyDean)
+use_gui = ENV['GUI']
 
 MC.logger = Logger.new("log", ENV.has_key?('DEBUG') ? Logger::DEBUG : Logger::INFO)
 
@@ -26,10 +27,11 @@ end
 
 bot.login
 
-gui = MC::BotGui.new(bot)
-
-Signal.trap("INT") do
-  gui.quit!
+if use_gui
+  gui = MC::BotGui.new(bot)
+  Signal.trap("INT") do
+    gui.quit!
+  end
 end
 
 packets = 0
@@ -41,14 +43,16 @@ rate = 20
 #   gui.quit!
 # end
 
-gui_thread = Thread.new do
-  begin
-    gui.update
-    sleep 0.1 # lets not hog
-  rescue
-    gui.quit!
-    MC.logger.fatal("GUI Thread Exception\n#{$!}\n#{$!.message}\n#{$!.backtrace.join("\n")}")
-  end until gui.done?
+if use_gui
+  gui_thread = Thread.new do
+    begin
+      gui.update
+      sleep 0.1 # lets not hog
+    rescue
+      gui.quit!
+      MC.logger.fatal("GUI Thread Exception\n#{$!}\n#{$!.message}\n#{$!.backtrace.join("\n")}")
+    end until gui.done?
+  end
 end
 
 begin
@@ -59,11 +63,13 @@ begin
   ending = Time.now
   packet_rate = 1.0 / (ending - starting)
 
-  gui.packets = packets
-  gui.packet_rate = packet_rate
-end until gui.done?
+  if ENV['GUI']
+    gui.packets = packets
+    gui.packet_rate = packet_rate
+  end
+end until (use_gui && gui.done?)
 
-if gui_thread.alive?
+if use_gui && gui_thread.alive?
   gui.quit!
   gui_thread.join
 end
