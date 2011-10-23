@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 module MC
   class PathFinder
+    MaxSteps = 96
     Infinity = 1.0 / 0
 
-    class Square
-      attr_accessor :parent, :position, :g, :h, :steps
+    class InvalidPathError < RuntimeError
+    end
 
-      def initialize(parent, position, g, h, steps = 0)
+    class NotEnoughStepsError < InvalidPathError
+    end
+
+    class InvalidTargetError < RuntimeError
+    end
+
+    class Square
+      attr_accessor :parent, :position, :g, :h
+
+      def initialize(parent, position, g, h)
         self.parent = parent
         self.position = position
         self.g = g
         self.h = h
-        self.steps = steps
       end
 
       def f
@@ -21,20 +30,22 @@ module MC
 
     def initialize(world, starting, target)
       @world = world
-      @closed = Array.new
-      @open = Array.new
-      @position = starting
-      @target = target
+      self.target = target
+      self.position = starting
     end
 
     attr_reader :closed, :open, :position, :target
 
     def position=(vector)
-      @position = vector.try(:to_block_position)
+      p = vector.try(:to_block_position)
+      @position_changed = position != p
+      @position = p
     end
 
     def target=(vector)
-      @target = vector.try(:to_block_position)
+      p = vector.try(:to_block_position)
+      @target_changed = target != p
+      @target = p
     end
 
     def at_target?(point = position)
@@ -42,19 +53,29 @@ module MC
     end
 
     def map_updated_at(position)
+
     end
 
-    def plot(max_steps = 100)
-      raise ArgumentError.new("Unwalkable target: #{target}") unless walkable?(target)
-
+    def reset!
       @open = [ Square.new(nil, position, 0, estimated_cost_from(position)) ]
       @closed = Array.new
+      @target_changed = @position_changed = false
+    end
 
+    def plot(max_steps = MaxSteps)
+      raise InvalidTargetError.new("Already at the target.") if at_target?
+      raise InvalidTargetError.new("Target (#{target}) is bed rock.") if block_at(target).bed_rock?
+      #MC.logger.debug("Plotting #{position} -> #{target}")
+
+      reset! if @target_changed || @position_changed
+
+      s = 0
       while !open.empty?
+        s += 1
         current = open.shift
-        break if !loaded?(current.position)
+        break if s >= max_steps
         closed << current
-        break if at_target?(current.position) || current.steps > max_steps
+        break if at_target?(current.position)
 
         neighbors_of(current.position) do |pos|
           next if closed.find { |e| e.position == pos }
@@ -66,87 +87,109 @@ module MC
             if g < square.g
               square.parent = current
               square.g = g
-              square.steps = current.steps + 1
             end
           else
-            open << Square.new(current, pos, g, estimated_cost_from(pos), current.steps + 1)
+            open << Square.new(current, pos, g, estimated_cost_from(pos))
           end
         end
 
         open.sort! { |a, b| a.f <=> b.f }
       end
 
-      if ENV['DEBUG']
-        debug_dump(open, "Open")
-        debug_dump(closed, "Closed")
-        debug_dump(open + closed, "Both")
-      end
+#       if ENV['DEBUG']
+#         debug_dump(open, "Open")
+#         debug_dump(closed, "Closed")
+#         debug_dump(open + closed, "Both")
+#       end
 
       trace_path(closed)
     end
 
     def estimated_cost_from(point)
-      point.distance_to(target) * 10
+      (target - point).length_square
     end
 
     def neighbors_of(point)
       [ -1, 0, 1 ].each do |dy|
         [ -1, 0, 1 ].each do |dz|
           [ -1, 0, 1 ].each do |dx|
-            next if dz == 0 && dx == 0 && dy != -1
             yield(point + Vector.new(dx, dy, dz))
           end
         end
       end
     end
 
+    def block_at(point)
+      @world[point.x, point.y, point.z]
+    end
+
     def loaded?(point)
-      @world[point.x, point.y, point.z].loaded?
+      block_at(point).loaded?
     end
 
     def solid?(point)
-      @world[point.x, point.y, point.z].type != 0
+      block_at(point).solid?
     end
 
-    def walkable?(point)
-      return true if !loaded?(point - Vector.new(0, -1, 0))
-      solid?(point + Vector.new(0, -1, 0)) &&
-        !solid?(point) &&
-        !solid?(point + Vector.new(0, 1, 0))
-    end
-
-    # Returns true if `b`, the destination, is not walkable, or if `a` to `b`
-    # is a diagonal and there is a solid block to the side, above, or below `a`,
-    # or if a->b is downward and there's a block above b at headlevel.
-    def blocked_from?(a, b)
-      delta = b - a
-      !walkable?(b) || ((delta.x.abs == 1 && delta.z.abs == 1) && (!walkable?(a + Vector.new(delta.x, 0, 0)) || !walkable?(a + Vector.new(0, 0, delta.z)))) || (delta.y == -1 && solid?(b + Vector.new(0, 2, 0)))
+    def cost_to_clear(point)
+      c = 0
+      legs = @world[point.x, point.y, point.z]
+      c += legs.strength if legs.solid?
+      head = @world[point.x, point.y + 1, point.z]
+      c += head.strength if head.solid?
+      c
     end
 
     def cost_to_move(a, b)
-      if blocked_from?(a, b)
-        Infinity
-      else
-        delta = b - a
+      return Infinity if !loaded?(b)
 
-        # Approximate delta.length * 10
-        if delta.x.abs == 1 && delta.y.abs == 1 && delta.z.abs == 1
-          17
-        elsif delta.x.abs == 1 && delta.z.abs == 1
-          14
-        else
-          10
+      delta = b - a
+      c = 1
+
+      c += cost_to_clear(b)
+      if delta.x.abs > 0 && delta.z.abs > 0
+        c += cost_to_clear(a + Vector.new(delta.x, 0, 0))
+        c += cost_to_clear(a + Vector.new(0, 0, delta.z))
+        if delta.y.abs > 0
+          c += cost_to_clear(a + Vector.new(delta.x, delta.y, 0))
+          c += cost_to_clear(a + Vector.new(0, delta.y, delta.z))
         end
       end
+
+      if delta.y >= 0 && !solid?(b + Vector.new(0, -1, 0))
+        c = Infinity
+      end
+
+      if delta.y > 0
+        c += block_at(a + Vector.new(0, 2, 0)).strength
+      elsif delta.y < 0
+        c += block_at(b + Vector.new(0, 2, 0)).strength
+
+        if !solid?(b + Vector.new(0, -1, 0)) # jumping off
+          c += 1000
+        end
+      end
+
+      c * 10
     end
 
     def trace_path(closed)
+      p = if at_target?(closed.last.position)
+            closed.last
+          else
+            closed.min { |a, b| a.h <=> b.h }
+          end
       path = Array.new
-      p = closed.last
+
       while p && p.parent
         path.unshift(p.position)
         p = p.parent
       end
+
+      raise InvalidPathError.new("There is no valid path.") if path.empty?
+      raise NotEnoughStepsError.new("More steps are required") if position.distance_to(path[0]) > 1.8
+
+      path.unshift(position)
       path
     end
 

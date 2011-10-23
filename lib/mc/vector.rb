@@ -22,6 +22,10 @@ module MC
       "<#{x}, #{y}, #{z}>"
     end
 
+    def to_a
+      [ x, y, z]
+    end
+
     def +(other)
       self.class.new(x + other.x, y + other.y, z + other.z)
     end
@@ -71,6 +75,10 @@ module MC
 
     def round
       self.class.new(x.round, y.round, z.round)
+    end
+
+    def abs
+      self.class.new(x.abs, y.abs, z.abs)
     end
 
     def to_block_position

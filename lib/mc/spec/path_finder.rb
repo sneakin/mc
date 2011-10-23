@@ -11,14 +11,15 @@ module MC
           base.subject { described_class.new(world, starting, ending) }
         end
 
-        def plot
-          subject.plot
+        def plot(steps = described_class.const_get('MaxSteps'))
+          subject.plot(steps)
         end
 
-        def dump_map(world)
-          size = ending - starting
-          m = MC::GUI::Mapper.new(world, size.length + 4, size.length + 4)
-          m.position = starting
+        def dump_map
+          size = (ending - starting).abs
+          m = GUI::Mapper.new(world, size.x + 4, size.z + 4)
+          m.position = starting + (size / 2.0)
+          $stderr.write("\n")
           m.draw_world($stderr)
           $stderr.puts("World:\t#{world.width}, #{world.height}, #{world.length}")
           world.origin_z.upto(world.origin_z + world.length - 1) do |z|

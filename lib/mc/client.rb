@@ -1,12 +1,17 @@
-module MC
-  autoload :Connection, 'mc/connection'
-  autoload :World, 'mc/world'
-  autoload :SpawnPosition, 'mc/packet'
-  autoload :TimeUpdate, 'mc/packet'
-  autoload :ServerInfo, 'mc/server_info'
+require 'active_support/core_ext'
+require 'mc/connection'
+require 'mc/world'
+require 'mc/packet'
+require 'mc/faces'
+require 'mc/server_info'
 
-  autoload :Entity, 'mc/entity'
-  autoload :NamedEntity, 'mc/named_entity'
+require 'mc/entity'
+require 'mc/named_entity'
+
+require 'mc/request'
+require 'mc/packet'
+
+module MC
 
   class Client
     attr_reader :socket, :name, :entities
@@ -416,32 +421,30 @@ module MC
       send_packet(PlayerBlockPlacement.new(-1, -1, -1, -1, -1, 0, 0))
     end
 
-    Faces = [ [ [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ],
-                [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ],
-                [ MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_Top ]
-              ],
-              [ [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_South, MC::PlayerDigging::Face_West ],
-                [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_Top, MC::PlayerDigging::Face_West ],
-                [ MC::PlayerDigging::Face_East, MC::PlayerDigging::Face_North, MC::PlayerDigging::Face_West ]
-              ],
-              [ [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ],
-                [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ],
-                [ MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom, MC::PlayerDigging::Face_Bottom ]
-              ]
+    Faces = [ [ Face_East, Face_East, Face_North ],
+              [ Face_South, Face_North, Face_North ],
+              [ Face_South, Face_West, Face_West ]
             ]
-
     def determine_dig_face(point)
-      d = (point - (position + Vector.new(0, 2, 0))).normalize.round
-      Faces[d.y + 1][d.z + 1][d.x + 1]
+      d = point - position
+      if d.y >= 2
+        Face_Bottom
+      elsif d.y < 0
+        Face_Top
+      else
+        d = (d * 10).normalize.round
+        MC.logger.debug("dig face\t#{position}\t#{point}\t#{d}")
+        Faces[d.z + 1][d.x + 1]
+      end
     end
 
     def dig_at(point, strikes = 50, face = nil)
       point = point.to_block_position
       face ||= determine_dig_face(point)
-      send_packet(MC::ChatMessage.new("I am digging at #{point} on face #{face}."))
+      MC.logger.debug("I am digging at #{point} on face #{face} which is #{world[point.x, point.y, point.z].inspect} with #{strikes} strikes.")
 
       # need to send a lot depending on the material and tool
-      strikes.times do
+      strikes.to_i.times do
         send_packet(MC::AnimationRequest.new(0, MC::AnimationRequest::SwingArm))
         send_packet(MC::PlayerDigging.new(MC::PlayerDigging::Started, point.x, point.y, point.z, face))
       end

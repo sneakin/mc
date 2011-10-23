@@ -31,7 +31,7 @@ module MC
       end
 
       def make_solid_floor(width, length, block_type)
-        Array.new(length) { Array.new(width) { MC::World::Block.new(block_type, 0, true) } }
+        Array.new(length) { Array.new(width) { MC::World::Block.new(block_type, 1, true) } }
       end
 
       def init_data(data)
@@ -50,10 +50,17 @@ module MC
         }
       end
 
-      NullBlock = MC::World::Block.new(7, 0, false)
+      NullBlock = MC::World::Block.new(0, 0, false)
 
       def [](x, y, z)
-        @data[y - @origin_y][z - @origin_z][x - @origin_x] ||
+        x = x - @origin_x
+        y = y - @origin_y
+        z = z - @origin_z
+        if x < 0 || x >= width || z < 0 || z >= length || y < 0 || y >= height
+          return NullBlock
+        end
+
+        @data[y][z][x] ||
           NullBlock
       rescue
         NullBlock

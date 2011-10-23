@@ -35,21 +35,39 @@ describe MC::PathFinder do
         if RUBY_VERSION =~ /^1\.8/
           93
         else
-          24.0
+          110
         end
       end
 
-      it "remains faster than the expected time" do
-        times = Benchmark.measure do
-          runs.times { plot.should_not be_empty }
-        end
-
-        times.real.should_not >= expected_total_time
+      it "plots a valid path" do
+        path = plot
+        path.first.should == starting
+        path.last.should == ending
       end
 
-      profile do
-        it "should be awesome" do
-          100.times { plot.should_not be_empty }
+      context 'without resets between plots' do
+        it "is faster on the second run" do
+          initial_times = Benchmark.measure { plot }
+          times = Benchmark.measure { plot }
+
+          times.real.should <= initial_times.real
+        end
+      end
+
+      context 'with resets after each plot' do 
+        it "remains faster than the expected time" do
+          times = Benchmark.measure do
+            runs.times { subject.reset!; plot.should_not be_empty }
+          end
+
+          MC.logger.debug("#{described_class}\#plot benchmark: #{times}")
+          times.real.should_not >= expected_total_time
+        end
+
+        profile do
+          it "should be awesome" do
+            100.times { subject.reset!; plot.should_not be_empty }
+          end
         end
       end
     end

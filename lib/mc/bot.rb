@@ -44,8 +44,8 @@ module MC
       when /dig (-?\d+) (-?\d+) (-?\d+) (\d) (\d)/ then dig($1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i)
       when /dig (-?\d+) (-?\d+) (-?\d+) (\d)/ then dig($1.to_i, $2.to_i, $3.to_i, $4.to_i)
       when /dig (-?\d+) (-?\d+) (-?\d+)/ then dig($1.to_i, $2.to_i, $3.to_i)
-      when /dig at (-?\d+) (-?\d+) (-?\d+) (\d)/ then dig_at($1.to_i, $2.to_i, $3.to_i, $4.to_i)
-      when /dig at (-?\d+) (-?\d+) (-?\d+)/ then dig_at($1.to_i, $2.to_i, $3.to_i)
+      when /dig at (-?\d+) (-?\d+) (-?\d+) (\d)/ then dig_at(Vector.new($1.to_i, $2.to_i, $3.to_i), $4.to_i)
+      when /dig at (-?\d+) (-?\d+) (-?\d+)/ then dig_at(Vector.new($1.to_i, $2.to_i), $3.to_i)
       when /slot (\d)/ then holding_slot($1.to_i)
       when /place (-?\d+) (-?\d+) (-?\d+) (-?\d+) (\d)/ then place($1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i)
       when /place (-?\d+) (-?\d+) (-?\d+) (\d)/ then place($1.to_i, $2.to_i, $3.to_i, -1, $4.to_i)
@@ -67,7 +67,7 @@ module MC
 
     def tick
       now = (Time.now.to_f * 10).to_i
-      if now % 2 == 0
+      if now % 3 == 0
         tick_motion 
         @last_time =  now
       end
@@ -83,14 +83,15 @@ module MC
       @path_finder ||= PathFinder.new(world, position, nil)
       @path_finder.target = Vector.new(x, y, z)
       @path = nil
-      # tick_motion
+      @path_digging = false
     end
 
     def tick_motion
       return if position.nil? || @path_finder.nil? || @path_finder.target == nil
 
       @path_finder.position = position # - Vector.new(0.5, 0, 0.5)
-      if @path_finder.target && @path_finder.at_target?
+
+      if @path.blank? && @path_finder.target && position.distance_to(@path_finder.target) < 1.4
         @path_finder.target = nil
         say("Made it")
         return
@@ -98,19 +99,45 @@ module MC
 
       @path = @path_finder.plot if @path.blank?
       MC.logger.debug("Path #{@path_finder.position} -> #{@path_finder.target}: #{@path.collect(&:to_s).join("; ")}")
-      if @path.empty?
-#        if @path_finder.at_target?
-#         else
-#           say("No way to move to #{@path_finder.target}")
-#        end
+
+      MC.logger.debug("Moving from #{position} to #{@path[0]} (digging #{@path_digging.inspect})")
+      p_i = @path[0]
+      p = Vector.new(p_i.x + 0.5, p_i.y, p_i.z + 0.5)
+      delta = p_i - position.to_block_position
+
+      if !@path_digging
+        leg_block = world[p_i.x, p_i.y, p_i.z]
+        head_block = world[p_i.x, p_i.y + 1, p_i.z]
+        face = determine_dig_face(p + Vector.new(0, 1, 0))
+        MC.logger.debug("Path point #{p_i} passable from #{face}? #{head_block.passable_from?(face)}\t#{head_block.inspect}\t#{delta}")
+
+        if delta.y > 0 && !world[*(position + Vector.new(0, 2, 0)).to_block_position].passable_from?(face)
+          dig_at(position + Vector.new(0, 2, 0), world[*(position + Vector.new(0, 2, 0)).to_block_position].strength.to_i)
+          @path_digging = 1
+        elsif delta.y < 0 && !world[p_i.x, p_i.y + 2, p_i.z].passable_from?(face)
+          dig_at(p_i + Vector.new(0, 2, 0), world[*(p_i + Vector.new(0, 2, 0))].strength.to_i)
+          @path_digging = 1
+        elsif !head_block.passable_from?(face)
+          dig_at(p_i + Vector.new(0, 1, 0), head_block.strength.to_i)
+          @path_digging = 1
+        elsif !leg_block.passable_from?(face) && leg_block.strength != (1.0 / 0)
+          dig_at(p_i, leg_block.strength.to_i)
+          @path_digging = 1
+        elsif leg_block.passable_from?(face) && head_block.passable_from?(face)
+          move_to(p.x, p.y, p.z)
+          @path.shift
+          @path_digging = false
+        end
+      elsif @path_digging >= 50
+        @path_digging = false
       else
-        MC.logger.debug("Moving from #{position} to #{@path[0]}")
-        move_to(@path[0].x + 0.5, @path[0].y, @path[0].z + 0.5)
-        @path.shift
+        @path_digging += 1
       end
     rescue ArgumentError
       say($!)
       @path_finder.target = nil
+    rescue PathFinder::InvalidPathError
+      say($!)
     end
 
     def on_map_chunk(packet)
@@ -123,16 +150,21 @@ module MC
 
     def on_block_change(packet)
       if @path && @path.any? { |p| p.to_block_position == packet.position }
-        @path = nil
+        @path_digging = false
       end
     end
 
    def on_multi_block_change(packet)
      return if @path.blank?
 
+     p_i = position.to_block_position
+     chunk = Vector.new(packet.x * World::Chunk::Width, 0, packet.z * World::Chunk::Length)
+
      packet.updates.each do |(pos, block)|
-       if @path.any? { |p| p == pos }
-         @path = nil
+       pos += chunk
+       MC.logger.debug("Block update #{pos} -> #{block.inspect}")
+       if @path.any? { |p| p == p_i || p == pos }
+         @path_digging = false
          break
        end
      end
