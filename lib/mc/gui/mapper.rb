@@ -153,7 +153,7 @@ module MC
         when 12 then :yellow
         when 15 then [ 255, 128, 128 ]
         when 17 then [ 128, 64, 0 ]
-        when 18 then [ 0, 128, 0 ]
+        when 18 then [ 0, 128, 128 ]
         when 50 then :yellow
         when 64 then [ 128, 128, 0 ]
         when 71 then :white
