@@ -11,7 +11,7 @@ module MC
       len = data.unpack('n')[0]
 
       data = io.read(len * 2)
-      data.force_encoding("BINARY").unpack("n#{len}").inject("".force_encoding(ENCODING)) { |a, c| a << c }.encode(Encoding.default_internal || Encoding.default_external)
+      data.force_encoding("BINARY").unpack("n#{len}").inject("".force_encoding(ENCODING)) { |a, c| a << c }.encode("UTF-8")
     end
   end
 end
