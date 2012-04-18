@@ -5,13 +5,15 @@ require 'mc/request'
 require 'mc/bot'
 require 'mc/bot_gui'
 
-host = 'li172-212.members.linode.com'
+#host = 'li172-212.members.linode.com'
 #host = 'localhost'
+host = ARGV[1]
 nick = ARGV[0] || 'Bot'
 admins = %W(SneakyDean)
 use_gui = ENV['GUI']
 
 MC.logger = Logger.new("log", ENV.has_key?('DEBUG') ? Logger::DEBUG : Logger::INFO)
+MC.logger.info("Connecting to #{host} as #{nick}")
 
 socket = TCPSocket.new(host, 25565)
 connection = MC::Connection.new(socket)
@@ -67,6 +69,9 @@ begin
     gui.packets = packets
     gui.packet_rate = packet_rate
   end
+rescue
+  MC.logger.fatal("#{$!.class}: #{$!.message}\n#{$!.backtrace.join("\n\t")}")
+  raise
 end until (use_gui && gui.done?)
 
 if use_gui && gui_thread.alive?
