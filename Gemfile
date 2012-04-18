@@ -16,4 +16,5 @@ end
 
 group :development do
   #gem 'ruby-debug'
+  gem 'pry'
 end
