@@ -1,3 +1,5 @@
+require 'pry'
+
 module MC
   class World
     class Block
@@ -79,14 +81,14 @@ module MC
     class ChunkUpdate
       attr_reader :size
 
-      def initialize(size)
-        @size = size
+      def initialize(size = nil)
+        @size = size || Vector.new(16, 256, 16)
         @blocks = Array.new
-        size.z.times do |z|
+        @size.z.times do |z|
           @blocks[z] = Array.new
-          size.y.times do |y|
+          @size.y.times do |y|
             @blocks[z][y] = Array.new
-            size.x.times do |x|
+            @size.x.times do |x|
               @blocks[z][y][x] = Block.new
             end
           end
@@ -100,7 +102,7 @@ module MC
 
     class Chunk
       Width = 16
-      Height = 128
+      Height = 256
       Length = 16
 
       def initialize(x, z, height = Height)
@@ -121,14 +123,15 @@ module MC
       end
 
       def absolute_block(x, y, z)
-        self[x.to_i & 15, y.to_i & 127, z.to_i & 15]
+        self[x.to_i & 15, y.to_i, z.to_i & 15]
       end
     end
 
-    attr_accessor :time, :spawn_position, :height, :dimension, :seed
+    attr_accessor :time, :spawn_position, :height, :dimension, :seed, :difficulty, :creative, :type
     attr_reader :chunks
 
     def initialize
+      @height = 256
       @chunks = Hash.new { |h, x| h[x] = Hash.new { |hh, z| hh[z] = Chunk.new(x, z, height) } }
     end
 
@@ -142,12 +145,17 @@ module MC
 
     def update_chunk(position, chunk_update)
       chunk = chunks[position.x >> 4][position.z >> 4]
-      c_p = Vector.new(position.x & 15, position.y & 127, position.z & 15)
+      c_p = Vector.new(position.x & 15, position.y, position.z & 15)
 
       chunk_update.size.z.times do |z|
         chunk_update.size.y.times do |y|
           chunk_update.size.x.times do |x|
-            chunk[c_p.x + x, c_p.y + y, c_p.z + z].update(chunk_update[x, y, z])
+            begin
+              chunk[x, position.y + y, z].update(chunk_update[x, y, z])
+#MC.logger.debug("Update chunk #{position} + #{x}, #{y}, #{z}\t#{chunk_update[x, y, z].inspect}")
+            rescue
+              raise "#{$!} raised at #{x}, #{y}, #{z}"
+            end
           end
         end
       end

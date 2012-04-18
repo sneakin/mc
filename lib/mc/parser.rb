@@ -64,6 +64,10 @@ module MC
       @io.read(4).unpack('N')[0]
     end
 
+    def read_ulongs(n)
+      @io.read(4 * n).unpack("N#{n}")
+    end
+
     def read_ulonglong
       parts = @io.read(8).unpack('NN')
       parts[0] << 32 | parts[1]
@@ -91,6 +95,10 @@ module MC
 
     def read_double_float_big
       @io.read(8).unpack('G')[0]
+    end
+
+    def read_bool
+      read_byte != 0
     end
 
     def read_metadata

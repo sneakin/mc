@@ -31,12 +31,12 @@ module MC
     attr_accessor :protocol_version, :user_name, :unused
 
     def initialize(name = 'MC Bot')
-      self.protocol_version = 17
+      self.protocol_version = 29
       self.user_name = name
     end
 
     def serialize
-      super + [ protocol_version ].pack('N') + String16.serialize(user_name) + Array.new(16, 0).pack('C16')
+      super + [ protocol_version ].pack('N') + String16.serialize(user_name) + String16.serialize("") + Array.new(16, 0).pack('C16')
     end
 
     def deserialize(parser)
@@ -48,19 +48,26 @@ module MC
 
   class HandshakeRequest < Request
     packet_id 0x02
-    attr_accessor :user_name
+    attr_accessor :user_name, :hostname, :port
 
-    def initialize(user_name = 'MC Bot')
+    def initialize(user_name, hostname, port = 25565)
       self.user_name = user_name
+      self.hostname = hostname
+      self.port = port
     end
 
     def serialize
-      super + String16.serialize(user_name)
+      super + String16.serialize(user_name + ';' + hostname + ":" + port.to_s)
     end
   end
 
   class RespawnRequest < Request
     packet_id 0x09
+    attr_accessor :dimension, :difficulty, :creative, :world_height, :level_type
+
+    def serialize
+      super + [ dimension || 0, difficulty || 0, creative || 0, world_height || 0 ].pack("Nccn") + String16.serialize(level_type)
+    end
   end
 
   class PlayerOnGround < Request

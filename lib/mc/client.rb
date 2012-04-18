@@ -68,9 +68,16 @@ module MC
       end
 
       register_handler(MC::LoginReply) do |packet|
+        #@world.dimension = packet.dimension
+        #@world.seed = packet.map_seed
+      end
+
+      register_handler(MC::Respawn) do |packet|
+        @world.dimension = packet.world
+        @world.difficulty = packet.difficulty
+        @world.creative = packet.creative_mode
         @world.height = packet.world_height
-        @world.dimension = packet.dimension
-        @world.seed = packet.map_seed
+        @world.type = packet.level_type
       end
 
       register_handler(MC::PreChunk) do |packet|
@@ -82,7 +89,7 @@ module MC
       end
 
       register_handler(MC::MapChunk) do |packet|
-        @world.update_chunk(packet.position, packet.chunk_update)
+        packet.each_chunk { |position, update| @world.update_chunk(position, update) }
       end
 
       register_handler(MC::MultiBlockChange) do |packet|
@@ -99,7 +106,7 @@ module MC
     end
 
     def connect
-      send_packet(MC::HandshakeRequest.new(name))
+      send_packet(MC::HandshakeRequest.new(name, connection.hostname, connection.port))
       process_packets(MC::HandshakeReply)
     end
 
@@ -112,7 +119,7 @@ module MC
     end
 
     def needs_session?
-      connection_hash != '-'
+      !(connection_hash == '-' || connection_hash == "\00")
     end
 
     def login

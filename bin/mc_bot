@@ -16,7 +16,7 @@ MC.logger = Logger.new("log", ENV.has_key?('DEBUG') ? Logger::DEBUG : Logger::IN
 MC.logger.info("Connecting to #{host} as #{nick}")
 
 socket = TCPSocket.new(host, 25565)
-connection = MC::Connection.new(socket)
+connection = MC::Connection.new(socket, host, 25565)
 bot = MC::Bot.new(nick, connection, admins)
 bot.connect
 

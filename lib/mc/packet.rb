@@ -68,16 +68,16 @@ module MC
 
   class LoginReply < Packet
     packet_id 0x01
-    attr_accessor :entity_id, :map_seed, :server_mode, :dimension, :difficulty, :world_height, :max_players
+    attr_accessor :entity_id, :level_type, :server_mode, :dimension, :difficulty, :max_players
 
     def deserialize(parser)
       self.entity_id = parser.read_ulong
-      parser.read_bytes(2)
-      self.map_seed = parser.read_ulonglong
+      parser.read_short
+      self.level_type = parser.read_string
       self.server_mode = parser.read_ulong
-      self.dimension = parser.read_char
+      self.dimension = parser.read_ulong
       self.difficulty = parser.read_char
-      self.world_height = parser.read_byte
+      parser.read_byte
       self.max_players = parser.read_byte
 
       # data = io.read(24)
@@ -105,14 +105,14 @@ module MC
 
   class Respawn < Packet
     packet_id 0x09
-    attr_accessor :world, :difficulty, :creative_mode, :world_height, :map_seed
+    attr_accessor :world, :difficulty, :creative_mode, :world_height, :map_seed, :level_type
 
     def deserialize(parser)
-      self.world = parser.read_byte
+      self.world = parser.read_ulong
       self.difficulty = parser.read_byte
       self.creative_mode = parser.read_byte
       self.world_height = parser.read_short
-      self.map_seed = parser.read_long
+      self.level_type = parser.read_string
     end
   end
 
@@ -166,7 +166,7 @@ module MC
 
   class MobSpawn < Packet
     packet_id 0x18
-    attr_accessor :entity_id, :mob_type, :position, :yaw, :pitch, :meta_data
+    attr_accessor :entity_id, :mob_type, :position, :yaw, :pitch, :head_yaw, :meta_data
 
     delegate :x, :y, :z, :to => :position
     delegate :x=, :y=, :z=, :to => :position
@@ -177,6 +177,7 @@ module MC
       self.position = Position.absolute(parser.read_long, parser.read_long, parser.read_long)
       self.yaw = parser.read_char
       self.pitch = parser.read_char
+      self.head_yaw = parser.read_char
 
       # data = io.read(19)
       # self.entity_id, self.mob_type, self.x, self.y, self.z, self.yaw, self.pitch = data.unpack('NcNNNcc')
@@ -243,7 +244,6 @@ module MC
       self.a = parser.read_long
       self.b = parser.read_long
       self.c = parser.read_long
-      #self.a, self.b, self.c = io.read(4 * 3).unpack('NNN')
     end
   end
 
@@ -347,6 +347,16 @@ module MC
     end
   end
 
+  class EntityHeadLook < Packet
+    packet_id 0x23
+    attr_accessor :entity_id, :head_yaw
+
+    def deserialize(parser)
+      self.entity_id = parser.read_ulong
+      self.head_yaw = parser.read_byte
+    end
+  end
+
   class Experience < Packet
     packet_id 0x2B
     attr_accessor :current, :level, :total
@@ -372,65 +382,110 @@ module MC
 
   class MapChunk < Packet
     packet_id 0x33
-    attr_accessor :position, :size, :data_size, :data
+    attr_accessor :position, :ground_up, :data_size, :data
+    attr_accessor :primary_bitmap, :add_bitmap
 
     delegate :x, :y, :z, :to => :position
 
     def deserialize(parser)
-      self.position = Vector.new(parser.read_long, parser.read_short, parser.read_long)
-      self.size = Vector.new(parser.read_byte + 1, parser.read_byte + 1, parser.read_byte + 1)
+      self.position = Vector.new(parser.read_long * 16, 0, parser.read_long * 16)
+      self.ground_up = parser.read_bool
+      self.primary_bitmap = parser.read_ushort
+      self.add_bitmap = parser.read_ushort
       self.data_size = parser.read_ulong
-      #self.x, self.y, self.z, self.size_x, self.size_y, self.size_z, self.data_size = io.read(17).unpack('NnNcccN')
+      parser.read_ulong
       self.data = parser.read_bytes(self.data_size)
     end
 
-    def size_x; size.x; end
-    def size_y; size.y; end
-    def size_z; size.z; end
+    def size; Vector.new(16, 256, 16); end
 
     def area
-      size.x * size.y * size.z
+      16 * 16 * 16
     end
 
     def real_data_size
-      (area * 2.5).to_i
+      (area * num_chunks * (3 + (ground_up ? 1 : 0))).to_i
     end
 
     def deflated_data
-      @deflated_data ||= Zlib::Inflate.inflate(data.pack("C#{data_size}")).unpack("C#{real_data_size}")
+      if @deflated_data == nil
+        raw = Zlib::Inflate.inflate(data.pack("C#{data_size}"))
+        @deflated_data = raw.unpack("C#{real_data_size}")
+      end
+
+      @deflated_data
+    end
+
+    def num_chunks
+      @num_chunks ||= primary_bitmap.to_s(2).count("1")
     end
 
     def chunk_update
+      @chunks ||= Array.new(16)
       ds = real_data_size
-      MC.logger.debug("Chunk data: #{deflated_data[ds, 10].inspect}")
-      types = deflated_data.shift(area)
-      metadata = deflated_data.shift(area / 2)
-      lights = deflated_data.shift(area / 2)
-      sky = deflated_data.shift(area / 2)
-      
-      c = World::ChunkUpdate.new(size)
-      size.z.times do |z|
-        size.y.times do |y|
-          size.x.times do |x|
-            index = y + (z * size.y) + (x * size.y * size.z)
-            c[x, y, z].type = types[index]
-            c[x, y, z].metadata = nibble(metadata, index)
-            c[x, y, z].lights = nibble(lights, index)
-            c[x, y, z].sky_light = nibble(sky, index)
+      #      MC.logger.debug("Chunk data: #{num_chunks}")
+
+      types = deflated_data.shift(num_chunks * area)
+      #MC.logger.debug("Chunk types: #{types.inspect}")
+      metadata = deflated_data.shift(num_chunks * area / 2)
+      lights = deflated_data.shift(num_chunks * area / 2)
+      sky = deflated_data.shift(num_chunks * area / 2)
+      adds = deflated_data.shift(num_chunks * area / 2)
+      biome = if ground_up
+                deflated_data.shift(num_chunks * 16 * 16)
+              end
+
+      chunk_i = 0
+      16.times do |chunk_y|
+        c = World::ChunkUpdate.new(Vector.new(16, 16, 16))
+
+        if (primary_bitmap & (1 << chunk_y)) != 0
+          16.times do |z|
+            16.times do |y|
+              16.times do |x|
+                index = x + (z * 16) + (y * 16 * 16) + (chunk_i * 16 * 16 * 16)
+
+                c[x, y, z].type = types[index]
+                c[x, y, z].metadata = nibble(metadata, index)
+                c[x, y, z].lights = nibble(lights, index)
+                c[x, y, z].sky_light = nibble(sky, index)
+                #MC.logger.debug("Decoded chunk #{chunk_y} #{x}, #{y}, #{z}\t#{index} #{types[index]}")
+                # TODO: other fields
+              end
+            end
           end
+
+          chunk_i += 1
+        # elsif ground_up
+        #   16.times do |z|
+        #     16.times do |y|
+        #       16.times do |x|
+        #         c[x, y, z].type = 0
+        #       end
+        #     end
+        #   end
         end
+
+        @chunks[chunk_y] = c
       end
 
-      @chunk = c
+      @chunks
+    end
+
+    def each_chunk
+      chunk_update.each_with_index { |chunk, i|
+MC.logger.debug("Yielding chunk #{i} #{position} #{chunk.nil?? nil : true}")
+        yield(position + Vector.new(0, 16 * i, 0), chunk) if chunk
+      }
     end
 
     private
     def nibble(data, index)
-      nibble = data[index / 2]
+      nibble = data[index / 2] || 0
       nibble = nibble >> 4 if index.odd?
       nibble & 0x7F
-    rescue
-      raise "#{index}\t#{index / 2}\t#{data[index / 2].inspect}\t#{data.inspect}"
+    #rescue
+    #  raise "#{index}\t#{index / 2}\t#{data[index / 2].inspect}\t#{data.inspect}"
     end
   end
 
@@ -464,29 +519,25 @@ module MC
 
   class MultiBlockChange < Packet
     packet_id 0x34
-    attr_accessor :x, :z, :size, :coordinates, :type, :meta_data
+    attr_accessor :x, :z, :count, :data_size, :data
 
     def deserialize(parser)
       self.x = parser.read_long
       self.z = parser.read_long
-      self.size = parser.read_short
-      self.coordinates = parser.read_shorts(self.size)
-      self.type = parser.read_bytes(self.size)
-      self.meta_data = parser.read_bytes(self.size)
-      #self.x, self.y, self.size = io.read(10).unpack('NNn')
-      #self.coordinates = io.read(self.size * 2).unpack("n#{self.size}")
-      #self.type = io.read(self.size).unpack("C#{self.size}")
-      #self.meta_data = io.read(self.size).unpack("C#{self.size}")
+      self.count = parser.read_short
+      self.data_size = parser.read_ulong
+      self.data = parser.read_ulongs(data_size)
     end
 
     def updates
       ret = Array.new
 
-      size.times do |i|
-        position = Vector.new((coordinates[i] >> 12) & 15, (coordinates[i] & 0xFF), (coordinates[i] >> 8) & 15)
+      count.times do |i|
+        d = data[i]
+        position = Vector.new((d >> 28) & 0xF, (d >> 16) & 0xFF, ((d >> 24) & 0xF))
         block = World::Block.new
-        block.type = type[i]
-        block.metadata = meta_data[i]
+        block.type = (d >> 4) & 0xFFF
+        block.metadata = d & 0xF
         ret[i] = [ position, block ]
       end
 
@@ -602,6 +653,17 @@ module MC
     end
   end
 
+  class PlayerExperience < Packet
+    packet_id 0x2B
+    attr_accessor :experience_bar, :level, :total
+
+    def deserialize(parser)
+      self.experience_bar = parser.read_float
+      self.level = parser.read_short
+      self.total = parser.read_short
+    end
+  end
+
   class SoundEffect < Packet
     packet_id 0x3D
     attr_accessor :effect_id, :x, :y, :z, :data
@@ -643,6 +705,17 @@ module MC
     end
   end
 
+  class TileUpdate < Packet
+    packet_id 0x84
+    attr_accessor :position, :action, :data
+
+    def deserialize(parser)
+      self.position = Vector.new(parser.read_long, parser.read_short, parser.read_long)
+      self.action = parser.read_byte
+      self.data = [ parser.read_long, parser.read_long, parser.read_long ]
+    end
+  end
+
   class IncrementStatistic < Packet
     packet_id 0xC8
     attr_accessor :statistic_id, :amount
@@ -668,6 +741,18 @@ module MC
 
     def online?
       online == true || online == 1
+    end
+  end
+
+  class PlayerAbilities < Packet
+    packet_id 0xCA
+    attr_accessor :invulnerable, :flying, :can_fly, :instant_destroy
+
+    def deserialize(parser)
+      self.invulnerable = parser.read_bool
+      self.flying = parser.read_bool
+      self.can_fly = parser.read_bool
+      self.instant_destroy = parser.read_bool
     end
   end
 
@@ -729,6 +814,15 @@ module MC
       self.item_id = parser.read_short
       self.damage = parser.read_short
       #self.entity_id, self.slot, self.item_id, self.damage = io.read(10).unpack('Nnnn')
+    end
+  end
+
+  class CloseWindow < Packet
+    packet_id 0x65
+    attr_accessor :window_id
+
+    def deserialize(parser)
+      self.window_id = parser.read_char
     end
   end
 

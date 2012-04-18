@@ -6,9 +6,11 @@ module MC
   autoload :Parser, 'mc/parser'
 
   class Connection
-    attr_reader :socket
+    attr_reader :socket, :hostname, :port
 
-    def initialize(io)
+    def initialize(io, hostname, port)
+      @hostname = hostname
+      @port = port
       self.socket = io
     end
 
