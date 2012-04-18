@@ -12,7 +12,7 @@ module MC
       @bot = bot
       @packets = 0
       @packet_rate = 0
-      @mapper = GUI::Mapper.new(bot.world, 64, 16)
+      @mapper = GUI::Mapper.new(bot.world, 60, 16)
       @term = GUI::Terminal.new($stdout)
       @term.character_mode
       @term.echo(false)
