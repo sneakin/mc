@@ -11,7 +11,7 @@ module MC
     def initialize(name, connection, admins = Array.new)
       super(name, connection)
       self.admins = admins
-      @last_time = Time.now
+      @last_time = Time.now.to_f
 
       register_handler(MapChunk, :on_map_chunk)
       register_handler(BlockChange, :on_block_change)
@@ -66,9 +66,9 @@ module MC
     end
 
     def tick
-      now = (Time.now.to_f * 10).to_i
-      if now % 3 == 0
-        tick_motion 
+      now = Time.now.to_f
+      if (now - @last_time) >= 0.05
+        tick_motion
         @last_time =  now
       end
     end
