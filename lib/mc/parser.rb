@@ -85,6 +85,10 @@ module MC
       @io.read(n).unpack("C#{n}")
     end
 
+    def read_raw_bytes(n)
+      @io.read(n)
+    end
+
     def read_float
       @io.read(4).unpack('e')[0]
     end

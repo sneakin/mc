@@ -394,7 +394,7 @@ module MC
       self.add_bitmap = parser.read_ushort
       self.data_size = parser.read_ulong
       parser.read_ulong
-      self.data = parser.read_bytes(self.data_size)
+      self.data = parser.read_raw_bytes(self.data_size)
     end
 
     def size; Vector.new(16, 256, 16); end
@@ -409,7 +409,7 @@ module MC
 
     def deflated_data
       if @deflated_data == nil
-        raw = Zlib::Inflate.inflate(data.pack("C#{data_size}"))
+        raw = Zlib::Inflate.inflate(data)
         @deflated_data = raw.unpack("C#{real_data_size}")
       end
 
