@@ -32,7 +32,7 @@ module MC
       end
 
       def solid?
-        type != 0 && type != 72 && type != 70 && type != 50 && type != 75 && type != 76
+        type != 0 && type != 72 && type != 70 && type != 50 && type != 75 && type != 76 && type != 78
       end
 
       def liquid?
