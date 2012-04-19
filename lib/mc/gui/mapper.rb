@@ -106,6 +106,11 @@ module MC
         return BlockChars[:unknown].color(64, 64, 64) unless legs.loaded?
 
         feet = world[x, y - 1, z]
+        solid_feet = feet.solid?
+	(y - 1).downto(0) do |feet_y|
+          break if feet.solid?
+          feet = world[x, feet_y, z]
+        end
         head = world[x, y + 1, z]
         #above = world[x, y + 2, z]
 
@@ -136,6 +141,9 @@ module MC
           c.color(:black).background(*block_color(b.type))
         elsif head.solid? && legs.solid?
           c.color(:default).background(*block_color(block.type))
+        elsif !solid_feet
+	  color = Vector.new(*block_color(feet.type)) * 0.5
+          c.color(*color)
         else
           c.color(*block_color(block.type))
         end
@@ -143,20 +151,20 @@ module MC
 
       def block_color(type)
         case type
-        when 0 then :black
+        when 0 then [ 0, 0, 0 ]
         when 1, 53, 67, 108, 109, 114 then [ 128, 128, 128 ]
-        when 2 then :green
+        when 2 then [ 0, 255, 0 ]
         when 3 then [ 255, 64, 0 ]
         when 7 then [ 64, 64, 64 ]
-        when 8, 9 then :blue
-        when 10, 11 then :red
-        when 12 then :yellow
+        when 8, 9 then [ 0, 0, 255 ]
+        when 10, 11 then [ 255, 0, 0 ]
+        when 12 then [ 255, 255, 0 ]
         when 15 then [ 255, 128, 128 ]
         when 17 then [ 128, 64, 0 ]
         when 18 then [ 0, 128, 128 ]
-        when 50 then :yellow
+        when 50 then [ 255, 255, 0 ]
         when 64 then [ 128, 128, 0 ]
-        when 71 then :white
+        when 71 then [ 255, 255, 255 ]
         else [ 96, 96, 96 ]
         end
       end
