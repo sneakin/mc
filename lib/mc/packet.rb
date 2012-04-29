@@ -526,7 +526,7 @@ MC.logger.debug("Yielding chunk #{i} #{position} #{chunk.nil?? nil : true}")
       self.z = parser.read_long
       self.count = parser.read_short
       self.data_size = parser.read_ulong
-      self.data = parser.read_ulongs(data_size)
+      self.data = parser.read_ulongs(count)
     end
 
     def updates
